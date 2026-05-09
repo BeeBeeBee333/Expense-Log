@@ -1,0 +1,3595 @@
+<!-- built 20260313 v9 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>지출 기록</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --ink: #1c1c1e;
+      --ink-muted: #8e8e93;
+      --accent: #c8572a;
+      --accent-light: #fef0eb;
+      --accent2: #2a7a5a;
+      --accent2-light: #e4f4ed;
+      --warn: #d4880a;
+      --border: #e5e5ea;
+      --shadow: 0 1px 8px rgba(0,0,0,0.08);
+      --radius: 12px;
+    }
+    body {
+      font-family: 'Nanum Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding-bottom: 80px;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 14px 14px 0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+    }
+    .app-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    /* TAB BAR */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid rgba(255,255,255,0.08);
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 4px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.active { color: #fff; border-bottom-color: var(--accent); }
+
+    /* MONTH NAV */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 0 10px;
+      position: relative;
+    }
+    .month-nav button {
+      background: rgba(255,255,255,0.1);
+      border: none; color: #fff;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .month-nav button:hover { background: rgba(255,255,255,0.2); }
+    #monthLabel {
+      font-size: 15px;
+      font-weight: 800;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* ── MAIN / TABS ── */
+    main { max-width: 480px; margin: 0 auto; padding: 12px 11px 0; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+    .card-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ── INPUTS ── */
+    input[type="number"], input[type="text"], input[type="date"], input[type="search"] {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px 8px 26px;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    input:focus { border-color: var(--accent); }
+    input.no-pfx { padding-left: 10px; }
+    .iw { position: relative; flex: 1; }
+    .iw .pfx {
+      position: absolute; left: 9px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-muted); font-size: 12px;
+      pointer-events: none;
+    }
+    select {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 8px;
+      font-size: 14px;
+      font-family: 'Nanum Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: center;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn-sm { padding: 5px 9px; font-size: 11px; border-radius: 6px; }
+    .btn-ghost {
+      background: none;
+      color: var(--accent);
+      border: 1.5px solid var(--accent);
+    }
+    .btn-ghost:hover { background: var(--accent-light); }
+    .btn-neutral {
+      background: var(--border);
+      color: var(--ink);
+    }
+    .btn-neutral:hover { background: #d0d0d5; }
+    .btn-danger-ghost {
+      background: none;
+      color: #c0392b;
+      border: 1.5px solid #e8c0bb;
+    }
+    .btn-danger-ghost:hover { background: #fff0ef; }
+
+    /* ── HERO ── */
+    .hero-card {
+      background: var(--ink);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 14px 14px 12px;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      bottom: -20px; right: -20px;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.15;
+    }
+    .hero-row { display: flex; gap: 10px; align-items: stretch; }
+    .hero-col { flex: 1; }
+    .hero-col + .hero-col {
+      border-left: 1px solid rgba(255,255,255,0.1);
+      padding-left: 12px;
+    }
+    .hero-lbl { font-size: 9px; color: #999; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+    .hero-amt {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+    .hero-amt .cur { font-size: 13px; opacity: 0.65; margin-right: 1px; }
+    .hero-amt.tomorrow { font-size: 20px; }
+    .hero-meta {
+      margin-top: 10px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .hero-meta-item { font-size: 11px; color: #bbb; }
+    .hero-meta-item strong { color: #fff; font-weight: 700; }
+    .progress-wrap { margin-top: 9px; }
+    .progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+    .progress-fill.safe   { background: var(--accent2); }
+    .progress-fill.warn   { background: #e8a82a; }
+    .progress-fill.danger { background: var(--accent); }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #888;
+      margin-top: 3px;
+    }
+
+    /* ── SUMMARY ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .sum-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 9px 6px;
+      text-align: center;
+    }
+    .sum-lbl { font-size: 9px; color: var(--ink-muted); margin-bottom: 3px; font-weight: 700; }
+    .sum-val { font-size: 14px; font-weight: 800; }
+    .sum-item.spent .sum-val { color: #c8572a; }
+    .sum-item.remain .sum-val { color: var(--accent2); }
+
+    /* ── TAG ── */
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .tag-over { background: #fde8e8; color: #c0392b; }
+    .tag-ok   { background: var(--accent2-light); color: var(--accent2); }
+    .tag-warn { background: #fef3e2; color: var(--warn); }
+
+    /* ── BUDGET CARD ── */
+    .budget-row { display: flex; gap: 7px; align-items: center; }
+    #budgetSetInfo { margin-top: 7px; font-size: 12px; color: var(--ink-muted); display: none; }
+
+    /* ── ADD FORM ── */
+    .add-form { display: flex; flex-direction: column; gap: 7px; }
+    .add-row  { display: flex; gap: 7px; align-items: stretch; }
+    .add-row > * { flex: 1; }
+
+    /* ── EXPENSE LIST ── */
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+    .divider { height: 1px; background: var(--border); margin: 0 0 8px; }
+    .expense-list { display: flex; flex-direction: column; gap: 5px; }
+    .expense-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 9px;
+      transition: box-shadow 0.15s;
+    }
+    .expense-item:hover { box-shadow: var(--shadow); }
+    .exp-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--accent-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .exp-info { flex: 1; min-width: 0; }
+    .exp-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exp-name mark { background: #fff3b0; border-radius: 2px; }
+    .exp-date { font-size: 10px; color: var(--ink-muted); margin-top: 1px; }
+    .exp-amt  { font-size: 13px; font-weight: 800; color: #c8572a; white-space: nowrap; }
+    .exp-del  {
+      background: none; border: none; cursor: pointer;
+      color: #ccc; font-size: 16px; padding: 1px 2px;
+      transition: color 0.15s; flex-shrink: 0; line-height: 1;
+    }
+    .exp-del:hover { color: #c0392b; }
+
+    .empty-state {
+      text-align: center; padding: 20px 10px;
+      color: var(--ink-muted); font-size: 12px;
+    }
+    .empty-state .ei { font-size: 24px; margin-bottom: 6px; }
+
+    .color-picker-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .color-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+    .color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.12s;
+      flex-shrink: 0;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: var(--ink); transform: scale(1.1); }
+    .color-custom-row {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: nowrap; width: 100%;
+    }
+    #accentColorPicker {
+      width: 32px; height: 32px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      cursor: pointer;
+      background: none;
+      flex: 0 0 32px;
+    }
+    .hex-input {
+      flex: 0 0 85px;
+      width: 85px;
+      min-width: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 4px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--bg);
+      outline: none;
+    }
+    .hex-input:focus { border-color: var(--accent); }
+    .hex-apply-btn { flex: 0 0 auto; }
+    .date-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      padding: 8px 2px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .date-group-label:first-child { padding-top: 0; }
+    .date-group-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── EDIT BUTTONS on expense item ── */
+    .exp-actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .exp-edit {
+      background: none; border: none; cursor: pointer;
+      color: #bbb; font-size: 13px; padding: 2px 4px;
+      transition: color 0.15s; line-height: 1;
+      border-radius: 4px;
+    }
+    .exp-edit:hover { color: var(--accent); background: var(--accent-light); }
+
+    /* ── EDIT EXPENSE MODAL ── */
+    .edit-form { display: flex; flex-direction: column; gap: 9px; }
+
+    /* ── EXCLUDE LABEL ── */
+    .exclude-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      color: var(--ink-muted);
+    }
+    .exclude-label input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
+    .exclude-hint { font-size: 10px; color: var(--ink-muted); font-weight: 400; }
+
+    /* ── CALENDAR EXCLUDED DAY ── */
+    .cal-day.has-excluded { background: #f0f0f5; }
+    .cal-amt.excluded-amt { color: var(--ink-muted); }
+    .search-row {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+    }
+    .cat-filter-select {
+      flex: 0 0 auto;
+      max-width: 130px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 8px;
+      font-size: 12px;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-weight: 700;
+      background: var(--bg);
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      text-align: center;
+    }
+    .cat-filter-select:focus { border-color: var(--accent); }
+    .cat-filter-select.filtered {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    /* period selector */
+    /* ── INNER TAB BAR (검색|통계) ── */
+    .inner-tab-bar {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin: 10px -2px 0;
+      gap: 0;
+    }
+    .inner-tab-btn {
+      flex: 1; background: none; border: none;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink-muted);
+      padding: 8px 0 10px;
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .inner-tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── SEARCH FOLDER TOGGLE ── */
+    .search-folder-btn {
+      width: 100%; background: none; border: none;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0; cursor: pointer;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px; font-weight: 800; color: var(--ink);
+    }
+    .folder-icon { font-size: 12px; color: var(--ink-muted); transition: transform 0.2s; }
+    .folder-icon.closed { transform: rotate(-90deg); }
+
+    .search-period-wrap {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+    .search-period-presets {
+      display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;
+    }
+    .period-chip {
+      font-size: 11px; font-weight: 700;
+      padding: 4px 9px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--ink-muted);
+      cursor: pointer; white-space: nowrap;
+    }
+    .period-chip.active {
+      background: var(--accent); border-color: var(--accent);
+      color: #fff;
+    }
+    .search-date-row {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .search-date-row input[type=date] {
+      flex: 1; font-size: 12px; padding: 6px 7px;
+      border: 1.5px solid var(--border); border-radius: 7px;
+      background: var(--surface); color: var(--ink);
+      font-family: 'Nanum Gothic', sans-serif;
+      outline: none; min-width: 0;
+    }
+    .search-date-row input[type=date]:focus { border-color: var(--accent); }
+    .search-date-sep { font-size: 11px; color: var(--ink-muted); white-space: nowrap; }
+    /* stats card */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 13px 10px;
+      margin-bottom: 10px;
+    }
+    .stat-card-title {
+      font-size: 10px; font-weight: 800;
+      color: var(--ink-muted); letter-spacing: 0.07em;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    /* summary row */
+    .stat-summary-row {
+      display: flex; gap: 0; margin-bottom: 14px;
+    }
+    .stat-sum-item { flex: 1; text-align: center; }
+    .stat-sum-item + .stat-sum-item { border-left: 1px solid var(--border); }
+    .stat-sum-lbl { font-size: 9px; color: var(--ink-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .stat-sum-val { font-size: 15px; font-weight: 800; color: var(--ink); }
+    .stat-sum-val.highlight { color: #c8572a; font-size: 17px; }
+    /* comparison bar */
+    .stat-compare-wrap { margin-bottom: 14px; }
+    .stat-compare-lbl {
+      font-size: 10px; color: var(--ink-muted); font-weight: 700;
+      display: flex; justify-content: space-between; margin-bottom: 5px;
+    }
+    .stat-compare-bars { display: flex; flex-direction: column; gap: 5px; }
+    .stat-bar-row { display: flex; align-items: center; gap: 7px; }
+    .stat-bar-label { font-size: 10px; color: var(--ink-muted); font-weight: 700; width: 36px; text-align: right; white-space: nowrap; }
+    .stat-bar-track { flex: 1; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+    .stat-bar-fill  { height: 100%; border-radius: 5px; background: var(--accent); transition: width 0.4s ease; }
+    .stat-bar-fill.prev { background: #bbb; }
+    .stat-bar-amt { font-size: 10px; font-weight: 800; color: var(--ink); white-space: nowrap; min-width: 56px; text-align: right; }
+    /* category breakdown */
+    .stat-cats { display: flex; flex-direction: column; gap: 6px; }
+    .stat-cat-row { display: flex; align-items: center; gap: 7px; }
+    .stat-cat-emoji { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+    .stat-cat-track { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .stat-cat-fill  { height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.4s ease; }
+    .stat-cat-info  { min-width: 80px; text-align: right; }
+    .stat-cat-amt   { font-size: 11px; font-weight: 800; color: var(--ink); }
+    .stat-cat-pct   { font-size: 9px; color: var(--ink-muted); }
+    /* result count */
+    .search-meta { font-size: 11px; color: var(--ink-muted); margin: 4px 0 8px; }
+    .search-wrap input { padding-left: 28px; }
+
+    /* ── CALENDAR ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      padding: 3px 0 5px;
+    }
+    .cal-dow:first-child { color: #c0392b; }
+    .cal-dow:last-child  { color: #2563ab; }
+    .cal-day {
+      border-radius: 7px;
+      padding: 4px 3px;
+      min-height: 44px;
+      font-size: 10px;
+      font-weight: 700;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .cal-day:hover { background: var(--accent-light); }
+    .cal-day.empty { cursor: default; }
+    .cal-day.empty:hover { background: none; }
+    .cal-day.today .cal-date-num {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .cal-date-num { font-size: 10px; font-weight: 700; line-height: 18px; min-width: 18px; text-align: center; }
+    .cal-day:first-child .cal-date-num,
+    .cal-sun .cal-date-num { color: #c0392b; }
+    .cal-sat .cal-date-num { color: #2563ab; }
+    .cal-day.has-excluded .cal-date-num {
+      text-decoration: underline;
+      text-decoration-color: #aaa;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+    .cal-amt {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+      line-height: 1.2;
+      word-break: break-all;
+    }
+    .cal-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 1px;
+    }
+    .cal-day.has-expense { background: var(--accent-light); }
+    .cal-legend { display: flex; gap: 10px; font-size: 10px; color: var(--ink-muted); margin-top: 8px; align-items: center; }
+    .cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
+    /* day detail popup */
+    .day-detail {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      margin-top: 10px;
+    }
+    .day-detail-title {
+      font-size: 12px; font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    /* budget set info */
+    #budgetSetInfo { display: none; align-items: center; justify-content: space-between; }
+
+    /* settings section spacing */
+    .settings-section { margin-bottom: 14px; }
+
+    /* settings section title */
+    .settings-section-title {
+      font-size: 11px; font-weight: 800;
+      color: var(--ink-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* no-budget banner */
+    .no-budget-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 13px 13px;
+      margin-bottom: 10px;
+    }
+    .nbb-icon { font-size: 26px; flex-shrink: 0; }
+    .nbb-text { flex: 1; min-width: 0; }
+    .nbb-title { font-size: 13px; font-weight: 800; }
+    .nbb-sub   { font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
+
+    /* set-info-row */
+    .set-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--ink-muted);
+    }
+
+    /* budget row */
+    .budget-row { display: flex; gap: 7px; align-items: center; }
+
+    /* start day */
+    .start-day-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .start-day-desc { font-size: 12px; color: var(--ink-muted); line-height: 1.6; }
+    .start-day-row  { display: flex; align-items: center; gap: 8px; }
+    .start-day-label { font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+    .start-day-unit  { font-size: 13px; color: var(--ink-muted); }
+    #startDaySelect, #onboardStartDay {
+      width: 72px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .cat-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 258px; /* ~5 items */
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .cat-emoji-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--accent-light);
+      border: 1.5px solid var(--border);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .cat-drag-handle {
+      color: #ccc; font-size: 14px; cursor: grab;
+      padding: 2px 2px; flex-shrink: 0; line-height: 1;
+      touch-action: none;
+    }
+    .cat-drag-handle:active { cursor: grabbing; }
+    .cat-item.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .cat-item { flex-wrap: wrap; }
+    .cat-item-main { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+    .cat-name-input {
+      flex: 1; min-width: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px;
+      background: var(--surface);
+      outline: none;
+      width: 0; /* flex가 제대로 줄어들게 */
+    }
+    .cat-name-input:focus { border-color: var(--accent); }
+    .cat-check-label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--ink-muted); cursor: pointer; white-space: nowrap;
+    }
+    .cat-check-label input[type=checkbox] { accent-color: var(--accent); width: 13px; height: 13px; }
+    .cat-del-btn {
+      background: none; border: none;
+      color: #ccc; font-size: 18px;
+      cursor: pointer; transition: color 0.15s;
+      padding: 2px;
+      line-height: 1;
+    }
+    .cat-del-btn:hover { color: #c0392b; }
+    .emoji-picker-wrap {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 200;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      width: 228px;
+      max-height: 198px;
+      overflow-y: auto;
+    }
+    .emoji-opt {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      border: none;
+      background: none;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+    }
+    .emoji-opt:hover { background: var(--accent-light); }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 16px 16px 0 0;
+      padding: 18px 14px 36px;
+      width: 100%;
+      max-width: 480px;
+      animation: slideUp 0.22s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-title {
+      font-size: 15px; font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      background: none; border: none;
+      font-size: 22px; color: var(--ink-muted);
+      cursor: pointer; padding: 0 3px; line-height: 1;
+    }
+    .modal-close:hover { color: var(--ink); }
+
+    /* ── TOGGLE SWITCH ── */
+    .toggle-switch { position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; cursor:pointer; inset:0;
+      background:#ccc; border-radius:24px; transition:.2s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute;
+      width:18px; height:18px; left:3px; bottom:3px;
+      background:#fff; border-radius:50%; transition:.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background:var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+    /* ── COMMENT BOX ── */
+    .comment-box {
+      margin: 0 0 10px;
+      padding: 10px 14px;
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      font-size: 12px;
+      color: var(--ink);
+      line-height: 1.6;
+      animation: fadeSlide 0.3s ease;
+    }
+    @keyframes fadeSlide {
+      from { opacity:0; transform:translateY(-4px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .comment-box .comment-text { font-weight: 700; }
+    .comment-box .comment-cond { font-size: 10px; color: var(--ink-muted); margin-top: 2px; }
+
+    /* export */
+    .export-scope { display: flex; gap: 14px; font-size: 12px; margin-bottom: 12px; }
+    .export-scope label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .export-scope input[type=radio] { accent-color: var(--accent); }
+    .export-options { display: flex; flex-direction: column; gap: 7px; }
+    .export-btn {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      cursor: pointer;
+      font-family: 'Nanum Gothic', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink);
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .export-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+    .export-btn .ei { font-size: 20px; width: 24px; text-align: center; }
+    .export-btn .ed { font-size: 10px; color: var(--ink-muted); font-weight: 400; margin-top: 1px; }
+
+    /* import */
+    .import-area {
+      border: 2px dashed var(--border);
+      border-radius: 9px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--ink-muted);
+      transition: border-color 0.15s;
+      margin-bottom: 10px;
+    }
+    .import-area:hover { border-color: var(--accent); color: var(--accent); }
+    .import-area .ii { font-size: 22px; margin-bottom: 4px; }
+    #importFileInput { display: none; }
+    .import-note { font-size: 11px; color: var(--ink-muted); line-height: 1.7; }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(8px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.28s ease both; }
+
+    @media (max-width: 360px) {
+      .hero-amt { font-size: 22px; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="app-title">지출 기록</div>
+    <div id="headerDate" style="font-size:12px;color:rgba(255,255,255,0.45);font-weight:400;"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('home')" id="tab-home">🏠 홈</button>
+    <button class="tab-btn" onclick="switchTab('calendar')" id="tab-calendar">📅 캘린더</button>
+    <button class="tab-btn" onclick="switchTab('search')" id="tab-search">📑 리포트</button>
+    <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️ 설정</button>
+  </div>
+  <div class="month-nav" id="monthNavBar">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span id="monthLabel"></span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ══════════ TAB: HOME ══════════ -->
+  <div class="tab-panel active fade-up" id="panel-home">
+    <div id="comment-home" class="comment-box" style="display:none"></div>
+
+    <!-- 예산 미설정 배너 -->
+    <div id="noBudgetBanner" class="no-budget-banner" style="display:none">
+      <div class="nbb-icon">💰</div>
+      <div class="nbb-text">
+        <div class="nbb-title">이번 달 예산을 설정하세요</div>
+        <div class="nbb-sub">설정 탭에서 예산과 시작일을 관리할 수 있어요</div>
+      </div>
+      <button class="btn btn-sm" onclick="switchTab('settings')">설정하기</button>
+    </div>
+
+    <!-- 오늘 / 내일 예산 히어로 -->
+    <div class="hero-card fade-up" id="heroCard" style="display:none">
+      <div class="hero-row">
+        <div class="hero-col">
+          <div class="hero-lbl">오늘 예산</div>
+          <div class="hero-amt"><span class="cur">₩</span><span id="dailyAmount">0</span></div>
+        </div>
+        <div class="hero-col">
+          <div class="hero-lbl">내일 예산 예정</div>
+          <div class="hero-amt tomorrow"><span class="cur">₩</span><span id="tomorrowAmount">0</span></div>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <div class="hero-meta-item">남은 날 <strong id="daysLeft">—</strong>일</div>
+        <div class="hero-meta-item">잔액 <strong id="remainBudget">—</strong></div>
+        <div class="hero-meta-item" id="overTag"></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="progress-labels">
+          <span>지출 <span id="pctSpent">0</span>%</span>
+          <span>예산 <span id="totalBudgetLabel">—</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 요약 -->
+    <div class="summary-grid" id="summaryGrid" style="display:none">
+      <div class="sum-item">
+        <div class="sum-lbl">총 예산</div>
+        <div class="sum-val" id="sBudget">—</div>
+      </div>
+      <div class="sum-item spent">
+        <div class="sum-lbl">지출</div>
+        <div class="sum-val" id="sSpent">—</div>
+      </div>
+      <div class="sum-item remain">
+        <div class="sum-lbl">잔액</div>
+        <div class="sum-val" id="sRemain">—</div>
+      </div>
+    </div>
+
+    <!-- 지출 추가 -->
+    <div class="card" id="addCard" style="display:none">
+      <div class="card-label">지출 추가</div>
+      <div class="add-form">
+        <div class="add-row">
+          <input type="text" id="expName" class="no-pfx" placeholder="항목명"/>
+          <select id="expCat" style="flex:0 0 48px;" title="카테고리"></select>
+        </div>
+        <div class="add-row">
+          <div class="iw">
+            <span class="pfx">₩</span>
+            <input type="number" id="expAmount" placeholder="금액" min="0" step="100"/>
+          </div>
+          <input type="date" id="expDate" class="no-pfx" style="flex:0 0 134px;"/>
+        </div>
+        <label class="exclude-label" onclick="event.stopPropagation()">
+          <input type="checkbox" id="expExclude"/>
+          <span>지출에서 제외</span>
+          <span class="exclude-hint">예산에 반영 안 됨</span>
+        </label>
+        <button type="button" class="btn" onclick="addExpense()">+ 추가</button>
+      </div>
+    </div>
+
+    <!-- 지출 내역 -->
+    <div class="card" id="listCard" style="display:none">
+      <div class="list-header">
+        <div class="card-label" style="margin-bottom:0">지출 내역</div>
+        <span id="expenseCount" style="font-size:11px;color:var(--ink-muted)"></span>
+      </div>
+      <div class="divider"></div>
+      <div class="expense-list" id="expenseList"></div>
+    </div>
+
+  </div><!-- /home -->
+
+  <!-- ══════════ TAB: CALENDAR ══════════ -->
+  <div class="tab-panel" id="panel-calendar">
+    <div id="comment-calendar" class="comment-box" style="display:none"></div>
+    <div class="card fade-up">
+      <div class="card-label">월별 지출 캘린더</div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span class="cal-legend-dot"></span>
+        <span>지출 있는 날</span>
+        <span class="cal-legend-dot" style="background:#aaa;"></span>
+        <span>미반영 포함</span>
+      </div>
+    </div>
+    <div id="dayDetail" style="display:none"></div>
+  </div>
+
+  <!-- ══════════ TAB: SEARCH/REPORT ══════════ -->
+  <div class="tab-panel" id="panel-search">
+    <div id="comment-search" class="comment-box" style="display:none"></div>
+
+    <!-- 검색 필터 카드 -->
+    <div class="card fade-up">
+      <div class="card-label">리포트</div>
+
+      <!-- 검색어 + 카테고리 -->
+      <div class="search-row">
+        <div class="iw" style="flex:1;">
+          <span class="pfx" style="font-size:13px;color:var(--ink-muted);">🔍</span>
+          <input type="search" id="searchInput" class="no-pfx" placeholder="항목명 검색..." oninput="doSearch(false)" onchange="doSearch(true)" onkeydown="if(event.key==='Enter'){doSearch(true)}" style="padding-left:30px;"/>
+        </div>
+        <select id="catFilter" onchange="selectCat(this.value)" class="cat-filter-select">
+          <option value="">전체 카테고리</option>
+        </select>
+      </div>
+
+      <!-- 기간 선택 -->
+      <div class="search-period-wrap">
+        <div class="search-period-presets" id="periodChips">
+          <button type="button" class="period-chip active" data-period="this" onclick="selectPeriodChip(this)">이번 달</button>
+          <button type="button" class="period-chip" data-period="prev" onclick="selectPeriodChip(this)">지난 달</button>
+          <button type="button" class="period-chip" data-period="3"    onclick="selectPeriodChip(this)">최근 3개월</button>
+          <button type="button" class="period-chip" data-period="6"    onclick="selectPeriodChip(this)">최근 6개월</button>
+          <button type="button" class="period-chip" data-period="custom" onclick="selectPeriodChip(this)">직접 입력</button>
+        </div>
+        <div class="search-date-row" id="customDateRow" style="display:none">
+          <input type="date" id="searchDateFrom" onchange="doSearch()"/>
+          <span class="search-date-sep">~</span>
+          <input type="date" id="searchDateTo" onchange="doSearch()"/>
+        </div>
+      </div>
+
+      <!-- 내부 탭: 검색 | 통계 -->
+      <div class="inner-tab-bar">
+        <button type="button" class="inner-tab-btn active" id="itab-list" onclick="switchInnerTab('list')">검색</button>
+        <button type="button" class="inner-tab-btn" id="itab-stat" onclick="switchInnerTab('stat')">통계</button>
+      </div>
+    </div>
+
+    <!-- 내부 탭 패널: 검색 결과 -->
+    <div id="ipanel-list">
+      <div class="card fade-up" id="searchResultCard">
+        <div style="font-size:11px;color:var(--ink-muted);margin-bottom:6px;" id="searchCount"></div>
+        <div class="expense-list" id="searchList"></div>
+      </div>
+    </div>
+
+    <!-- 내부 탭 패널: 통계 -->
+    <div id="ipanel-stat" style="display:none">
+      <div class="stat-card fade-up" id="statCard">
+        <div class="stat-card-title" id="statCardTitle"></div>
+
+        <!-- 월별 막대 비교 -->
+        <div class="stat-compare-wrap" id="statCompareWrap">
+          <div class="stat-compare-lbl">
+            <span>월별 지출</span>
+          </div>
+          <div class="stat-compare-bars" id="statCompareBars"></div>
+        </div>
+
+        <!-- 카테고리 비중 -->
+        <div class="stat-card-title" style="margin-top:12px;">카테고리 비중</div>
+        <div class="stat-cats" id="statCats"></div>
+
+        <!-- 식비 합산 -->
+        <div id="statFoodWrap" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+          <div class="stat-card-title">식비 합산</div>
+          <div id="statFoodRows"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB: SETTINGS ══════════ -->
+  <div class="tab-panel" id="panel-settings">
+
+    <!-- 예산 설정 카드 -->
+    <div class="card fade-up" id="settingsBudgetCard">
+      <div class="settings-section-title">이번 달 예산</div>
+      <div class="budget-row" id="budgetInputRow">
+        <div class="iw">
+          <span class="pfx">₩</span>
+          <input type="number" id="budgetInput" placeholder="예산 입력" min="0" step="1000"/>
+        </div>
+        <button class="btn" id="budgetSetBtn" onclick="setBudget()">설정</button>
+      </div>
+      <div id="budgetSetInfo" style="display:none">
+        <div class="set-info-row">
+          <span>설정됨: <strong id="budgetDisplay"></strong></span>
+          <button class="btn btn-ghost btn-sm" onclick="editBudget()">수정</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 월 시작일 설정 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">한 달 시작일</div>
+      <div class="start-day-wrap">
+        <div class="start-day-desc">매달 몇 일부터 시작할지 설정합니다.<br>예산과 남은 날 계산에 반영됩니다.</div>
+        <div class="start-day-row">
+          <span class="start-day-label">시작일</span>
+          <select id="startDaySelect" onchange="saveStartDay()">
+            <!-- options injected by JS -->
+          </select>
+          <span class="start-day-unit">일</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 포인트 컬러 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">포인트 컬러</div>
+      <div class="color-picker-wrap">
+        <div class="color-swatches" id="colorSwatches"></div>
+        <div class="color-custom-row">
+          <input type="color" id="accentColorPicker" onchange="applyAccent(this.value, true)" title="컬러 피커"/>
+          <input type="text" id="accentHexInput" class="hex-input" placeholder="#c8572a" maxlength="7" onkeydown="if(event.key==='Enter') applyHexInput()"/>
+          <button class="btn btn-sm hex-apply-btn" onclick="applyHexInput()">적용</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 카테고리 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">카테고리 관리</div>
+      <div class="cat-list" id="catList"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;" onclick="addCategory()">+ 카테고리 추가</button>
+    </div>
+
+    <!-- 목표액 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">목표액 설정</div>
+      <div id="targetList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addTargetRow()">+ 목표 추가</button>
+    </div>
+
+    <!-- 코멘트 설정 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">코멘트 모드</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:12px;color:var(--ink-muted);">각 탭에 랜덤 코멘트 표시</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="commentModeToggle" onchange="saveCommentMode()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="commentMgr" style="display:none;flex-direction:column;gap:7px;">
+        <div style="font-size:11px;color:var(--ink-muted);line-height:1.6;padding:8px 10px;background:var(--bg);border-radius:8px;">
+          현재 <strong id="commentCountLabel">0</strong>개 코멘트 로드됨
+        </div>
+        <button class="btn btn-sm" style="width:100%;background:var(--accent);" onclick="document.getElementById('commentFileInput').click()">📂 코멘트 파일 가져오기 (.txt)</button>
+        <input type="file" id="commentFileInput" accept=".txt" style="display:none" onchange="importComments(event)"/>
+        <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="exportCommentTemplate()">📄 양식 내보내기</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="exportComments()">💾 현재 코멘트 내보내기</button>
+        <button class="btn btn-danger-ghost btn-sm" style="width:100%;margin-top:4px;" onclick="resetComments()">🗑️ 코멘트 초기화</button>
+      </div>
+    </div>
+
+    <!-- 데이터 관리 카드 -->
+    <div class="card fade-up">
+      <div class="settings-section-title">데이터 관리</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <button class="btn" style="width:100%;background:#3d8bcd;" onclick="openImport()">📥 데이터 가져오기</button>
+        <button class="btn" style="width:100%;background:var(--accent2);" onclick="openExport()">📤 데이터 내보내기</button>
+        <button class="btn" style="width:100%;background:#6c6c80;" onclick="exportSettings()">⚙️ 설정 내보내기</button>
+        <button class="btn btn-danger-ghost btn-sm" style="width:100%;margin-top:4px;" onclick="clearMonthData()">🗑️ 이번 달 데이터 초기화</button>
+        <button class="btn btn-danger-ghost btn-sm" style="width:100%;" onclick="clearAllData()">🗑️ 전체 데이터 초기화</button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ── EXPORT MODAL ── -->
+<div class="modal-overlay" id="exportModal" onclick="closeModal('exportModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">내보내기 <button class="modal-close" onclick="closeModal('exportModal')">×</button></div>
+    <div class="export-scope">
+      <label><input type="radio" name="exportScope" value="month" checked> 이번 달만</label>
+      <label><input type="radio" name="exportScope" value="all"> 전체 데이터</label>
+    </div>
+    <div class="export-options">
+      <button class="export-btn" onclick="doExport('json')">
+        <span class="ei">📄</span>
+        <div><div>데이터 파일 (.json)</div><div class="ed">백업 및 다시 가져오기용</div></div>
+      </button>
+      <button class="export-btn" onclick="doExport('xlsx')">
+        <span class="ei">📊</span>
+        <div><div>엑셀 파일 (.xlsx)</div><div class="ed">스프레드시트에서 열기</div></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMPORT MODAL ── -->
+<div class="modal-overlay" id="importModal" onclick="closeModal('importModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">가져오기 <button class="modal-close" onclick="closeModal('importModal')">×</button></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+      <div class="import-area" onclick="document.getElementById('importFileInput').click()">
+        <div class="ii">📄</div>
+        <div>JSON 파일 가져오기</div>
+        <div style="font-size:10px;margin-top:3px;">백업 파일 (.json)</div>
+      </div>
+      <div class="import-area" onclick="document.getElementById('importXlsxInput').click()">
+        <div class="ii">📊</div>
+        <div>엑셀 파일 가져오기</div>
+        <div style="font-size:10px;margin-top:3px;">이 앱에서 내보낸 .xlsx 파일만 가능</div>
+      </div>
+    </div>
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="doImport(event)"/>
+    <input type="file" id="importXlsxInput" accept=".xlsx" style="display:none" onchange="doImportXLSX(event)"/>
+    <div class="import-note">⚠️ 기존 데이터와 병합됩니다.<br>같은 기간 데이터가 있으면 예산만 덮어씁니다.</div>
+  </div>
+</div>
+
+<!-- ── ONBOARDING MODAL (first visit) ── -->
+<div class="modal-overlay open" id="onboardingModal">
+  <div class="modal" onclick="event.stopPropagation()" style="padding-bottom:28px;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:36px;margin-bottom:8px;">💰</div>
+      <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:6px;">가계부에 오신 걸 환영해요!</div>
+      <div style="font-size:12px;color:var(--ink-muted);line-height:1.7;">먼저 이번 달 예산과 한 달 시작일을 설정해 주세요.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div class="settings-section-title" style="margin-bottom:7px;">이번 달 예산</div>
+        <div class="budget-row">
+          <div class="iw">
+            <span class="pfx">₩</span>
+            <input type="number" id="onboardBudget" placeholder="예산 입력" min="0" step="1000"/>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="settings-section-title" style="margin-bottom:7px;">한 달 시작일</div>
+        <div class="start-day-row">
+          <span class="start-day-label">매달</span>
+          <select id="onboardStartDay">
+            <!-- filled by JS -->
+          </select>
+          <span class="start-day-unit">일부터 시작</span>
+        </div>
+        <div class="start-day-desc" style="margin-top:6px;">급여일 기준으로 설정하면 편리해요</div>
+      </div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:18px;" onclick="completeOnboarding()">시작하기</button>
+    <button class="btn btn-neutral" style="width:100%;margin-top:8px;" onclick="skipOnboarding()">나중에 설정하기</button>
+  </div>
+</div>
+
+<!-- ── EDIT EXPENSE MODAL ── -->
+<div class="modal-overlay" id="editModal" onclick="closeModal('editModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">지출 수정 <button class="modal-close" onclick="closeModal('editModal')">×</button></div>
+    <div class="edit-form">
+      <input type="hidden" id="editId"/>
+      <div class="add-row">
+        <input type="text" id="editName" class="no-pfx" placeholder="항목명"/>
+        <select id="editCat" style="flex:0 0 48px;"></select>
+      </div>
+      <div class="add-row">
+        <div class="iw">
+          <span class="pfx">₩</span>
+          <input type="number" id="editAmount" placeholder="금액" min="0" step="100"/>
+        </div>
+        <input type="date" id="editDate" class="no-pfx" style="flex:0 0 134px;"/>
+      </div>
+      <label class="exclude-label">
+        <input type="checkbox" id="editExclude"/>
+        <span>지출에서 제외</span>
+      </label>
+      <button class="btn" style="width:100%;" onclick="saveEditExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EMOJI PICKER (floating) ── -->
+<div id="emojiPicker" class="emoji-picker-wrap" style="display:none;position:fixed;"></div>
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let currentYear, currentMonth;
+let data = {};
+let categories = [];
+let activeEmojiTarget = null;
+let activeTab = 'home';
+let selectedCat = null;   // emoji string or null = all
+let activePeriod = 'this';
+
+const STORAGE_KEY  = 'kakeibo_v4';
+const CAT_KEY      = 'kakeibo_cats_v2';
+const CFG_KEY      = 'kakeibo_cfg_v1';
+
+let startDay    = 1;
+let accentColor = '#c8572a';
+
+const DEFAULT_CATS = [
+  { emoji: '🍽️', name: '식비',   isFoodType: true,  target: 0 },
+  { emoji: '🚌', name: '교통',   isFoodType: false, target: 0 },
+  { emoji: '🛍️', name: '쇼핑',   isFoodType: false, target: 0 },
+  { emoji: '☕', name: '카페',   isFoodType: false, target: 0 },
+  { emoji: '🎉', name: '여가',   isFoodType: false, target: 0 },
+  { emoji: '🏠', name: '주거',   isFoodType: false, target: 0 },
+  { emoji: '💊', name: '의료',   isFoodType: false, target: 0 },
+  { emoji: '📚', name: '교육',   isFoodType: false, target: 0 },
+  { emoji: '💡', name: '공과금', isFoodType: false, target: 0 },
+  { emoji: '🎁', name: '기타',   isFoodType: false, target: 0 },
+];
+
+const ALL_EMOJIS = [
+  '🍽️','🍜','🍕','🍔','🍣','🥗','🍱','🍰','🍺','🥤',
+  '🚌','🚗','🚇','✈️','🚲','⛽','🚕','🛵','🚎','🛤️',
+  '🛍️','👗','👟','💄','🧴','🛒','💍','🎒','🧢','👒',
+  '☕','🧋','🍵','🥂','🍷','🍸','🍹','🧉','🍫','🍭',
+  '🎉','🎬','🎮','🎭','🎵','🏊','⛳','🎳','🎲','🎨',
+  '🏠','🛋️','🔧','🧹','💡','🏡','🛏️','🪴','🪞','🗝️',
+  '💊','🏥','🩺','💉','🩹','🧘','💪','🦷','👓','🧬',
+  '📚','✏️','🎓','📖','📝','🖊️','📐','🧮','🔬','🏫',
+  '💡','💻','📱','⌨️','🖥️','🖨️','📷','📡','🔌','🔋',
+  '🎁','❤️','🌸','🌟','💰','🪙','💵','🏦','📦','🧧',
+];
+
+// ════════════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════════════
+function saveData()  { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){} }
+function loadData()  { try { data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e){ data={}; } }
+function saveCats()  { try { localStorage.setItem(CAT_KEY, JSON.stringify(categories)); } catch(e){} }
+function loadCats()  {
+  try {
+    const saved = localStorage.getItem(CAT_KEY);
+    categories = saved ? JSON.parse(saved) : [...DEFAULT_CATS];
+    // 필드 마이그레이션: isFoodType, target 없으면 기본값 추가
+    categories.forEach(c => {
+      if (c.isFoodType === undefined) c.isFoodType = (c.emoji === '🍽️');
+      if (c.target     === undefined) c.target = 0;
+    });
+  } catch(e) { categories = [...DEFAULT_CATS]; }
+}
+function saveCfg()   { try { localStorage.setItem(CFG_KEY, JSON.stringify({ startDay, accentColor, commentMode })); } catch(e){} }
+function loadCfg()   {
+  try {
+    const saved = localStorage.getItem(CFG_KEY);
+    if (saved) {
+      const c = JSON.parse(saved);
+      startDay    = c.startDay    || 1;
+      accentColor = c.accentColor || '#c8572a';
+      commentMode = !!c.commentMode;
+    }
+  } catch(e) {}
+}
+function isFirstVisit() { return !localStorage.getItem(CFG_KEY); }
+function monthKey(y,m) { return `${y}-${String(m).padStart(2,'0')}`; }
+function getMonthData(y,m) {
+  const k = monthKey(y,m);
+  if (!data[k]) data[k] = { budget:0, expenses:[] };
+  return data[k];
+}
+
+// 예산 미설정 달은 현재 시즌 예산을 fallback으로 반환 (data 변경 없음)
+function getEffectiveBudget(y,m) {
+  const md = getMonthData(y,m);
+  if (md.budget > 0) return md.budget;
+  const cur = getCurrentPeriod();
+  return (data[monthKey(cur.y, cur.m)] || {}).budget || 0;
+}
+
+// Which period key does a given date belong to?
+// Period N starts on startDay of calendar month N, ends on startDay-1 of calendar month N+1.
+// If startDay=1: period = calendar month (normal).
+// If startDay=10: e.g. Mar 10 – Apr 9 → stored under "YYYY-03".
+//   A date of Apr 5 (before Apr 10) still belongs to period "YYYY-03".
+function periodKeyForDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (d >= startDay) {
+    return monthKey(y, m);
+  } else {
+    // belongs to previous period
+    let pm = m - 1, py = y;
+    if (pm < 1) { pm = 12; py--; }
+    return monthKey(py, pm);
+  }
+}
+
+// Given today, what "budget period" (year, month) are we in?
+function getCurrentPeriod() {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const [y, m] = periodKeyForDate(todayStr).split('-').map(Number);
+  return { y, m };
+}
+
+// Period for (y, m) spans: startDay of (y,m) → startDay-1 of next calendar month.
+// Returns { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } as strings to avoid UTC timezone issues
+function getPeriodRange(y, m) {
+  const pad = n => String(n).padStart(2,'0');
+  const startStr = `${y}-${pad(m)}-${pad(startDay)}`;
+
+  let endY = y, endM = m + 1;
+  if (endM > 12) { endM = 1; endY++; }
+
+  let endStr;
+  if (startDay === 1) {
+    // last day of month m
+    const lastDay = new Date(y, m, 0).getDate();
+    endStr = `${y}-${pad(m)}-${pad(lastDay)}`;
+  } else {
+    endStr = `${endY}-${pad(endM)}-${pad(startDay - 1)}`;
+  }
+  // Also expose Date objects for legacy calendar code (set to local noon to avoid DST edge cases)
+  const toDate = s => { const [sy,sm,sd] = s.split('-').map(Number); return new Date(sy, sm-1, sd, 12, 0, 0); };
+  return { start: toDate(startStr), end: toDate(endStr), startStr, endStr };
+}
+
+// Days remaining in period (y,m) from today, inclusive. 0 if past or future.
+function getDaysLeftInPeriod(y, m) {
+  const { startStr, endStr } = getPeriodRange(y, m);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if (todayStr > endStr)   return 0;
+  if (todayStr < startStr) {
+    // 미래 시즌: 전체 길이 반환
+    const [sy,sm,sd] = startStr.split('-').map(Number);
+    const [ey,em,ed] = endStr.split('-').map(Number);
+    return Math.round((new Date(ey,em-1,ed) - new Date(sy,sm-1,sd)) / 86400000) + 1;
+  }
+  // 오늘이 시즌 안에 있음: 오늘부터 endStr까지 (inclusive)
+  const [ey,em,ed] = endStr.split('-').map(Number);
+  const [ty,tm,td] = todayStr.split('-').map(Number);
+  return Math.round((new Date(ey,em-1,ed) - new Date(ty,tm-1,td)) / 86400000) + 1;
+}
+
+function fmtPeriod(y, m) {
+  const { start, end } = getPeriodRange(y, m);
+  const pad = n => String(n).padStart(2,'0');
+  const s = `${pad(start.getMonth()+1)}/${pad(start.getDate())}`;
+  const e = `${pad(end.getMonth()+1)}/${pad(end.getDate())}`;
+  return `${s}~${e}`;
+}
+
+function isPeriodCurrent(y, m) {
+  const cur = getCurrentPeriod();
+  return cur.y === y && cur.m === m;
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function init() {
+  loadData(); loadCats(); loadCfg(); loadCommentCfg();
+  applyAccent(accentColor, false);
+  buildStartDaySelects();
+
+  const period = getCurrentPeriod();
+  currentYear  = period.y;
+  currentMonth = period.m;
+
+  const now = new Date();
+  document.getElementById('expDate').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('headerDate').textContent =
+    `${String(now.getDate()).padStart(2,'0')}일 (${days[now.getDay()]})`;
+
+  buildCatSelect();
+
+  if (isFirstVisit()) {
+    document.getElementById('onboardingModal').classList.add('open');
+  } else {
+    document.getElementById('onboardingModal').classList.remove('open');
+  }
+
+  render();
+  renderSettings();
+  showComment('home');
+}
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function switchTab(name) {
+  activeTab = name;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  // show/hide month nav for search/settings
+  const showNav = (name !== 'search' && name !== 'settings');
+  document.getElementById('monthNavBar').style.display = showNav ? '' : 'none';
+
+  if (name === 'calendar') {
+    const now = new Date();
+    currentYear  = now.getFullYear();
+    currentMonth = now.getMonth() + 1;
+    renderCalendar();
+    document.getElementById('monthLabel').textContent = `${currentYear}년 ${currentMonth}월`;
+  }
+  if (name === 'home') {
+    const period = getCurrentPeriod();
+    currentYear  = period.y;
+    currentMonth = period.m;
+    render();
+  }
+  if (name === 'search')   { buildCatChips(); doSearch(); }
+  if (name === 'settings') renderSettings();
+  showComment(name);
+}
+
+// ════════════════════════════════════════════
+// MONTH NAV
+// ════════════════════════════════════════════
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
+  render();
+  if (activeTab === 'calendar') renderCalendar();
+}
+
+// ════════════════════════════════════════════
+// RENDER HOME
+// ════════════════════════════════════════════
+function render() {
+  const md     = getMonthData(currentYear, currentMonth);
+  const budget = getEffectiveBudget(currentYear, currentMonth);
+  const isCurrent = isPeriodCurrent(currentYear, currentMonth);
+
+  document.getElementById('monthLabel').textContent =
+    activeTab === 'calendar'
+      ? `${currentYear}년 ${currentMonth}월`
+      : fmtPeriod(currentYear, currentMonth);
+
+  // 설정 탭 예산 표시 (실제 저장값 기준)
+  const budInput  = document.getElementById('budgetInput');
+  const budInfo   = document.getElementById('budgetSetInfo');
+  const budRow    = document.getElementById('budgetInputRow');
+  if (md.budget > 0) {
+    budRow.style.display  = 'none';
+    budInfo.style.display = 'flex';
+    document.getElementById('budgetDisplay').textContent = fmt(md.budget) + '원';
+  } else {
+    budRow.style.display  = '';
+    budInfo.style.display = 'none';
+    budInput.value = '';
+  }
+
+  const allExp = (() => {
+    const { startStr, endStr } = getPeriodRange(currentYear, currentMonth);
+    const result = [];
+    Object.values(data).forEach(mk => {
+      (mk.expenses || []).forEach(e => {
+        if (e.date >= startStr && e.date <= endStr && e.excluded !== true) result.push(e);
+      });
+    });
+    return result;
+  })();
+
+  // 오늘 날짜
+  const now2 = new Date();
+  const todayStr2 = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}-${String(now2.getDate()).padStart(2,'0')}`;
+
+  const untilYesterday = allExp.filter(e => e.date <  todayStr2).reduce((s,e) => s + e.amount, 0);
+  const todaySpentAmt  = allExp.filter(e => e.date === todayStr2).reduce((s,e) => s + e.amount, 0);
+  const totalSpent     = untilYesterday + todaySpentAmt;
+  const remaining      = budget - totalSpent;
+
+  const daysLeft = getDaysLeftInPeriod(currentYear, currentMonth);
+
+  const remainingInitial = budget - untilYesterday;
+  const todayAlloc       = daysLeft > 0 ? Math.floor(remainingInitial / daysLeft) : 0;
+  const dailyBudget      = todayAlloc - todaySpentAmt;
+  const tomorrowDays     = daysLeft > 1 ? daysLeft - 1 : 0;
+  const tomorrowBudget   = tomorrowDays > 0 ? Math.floor(remaining / tomorrowDays) : 0;
+
+  if (budget > 0) {
+    hide('noBudgetBanner');
+    show('heroCard');
+    const fmtAmt = n => (n < 0 ? '-' : '') + fmt(Math.abs(n));
+    document.getElementById('dailyAmount').textContent    = fmtAmt(dailyBudget);
+    document.getElementById('tomorrowAmount').textContent = fmtAmt(tomorrowBudget);
+    document.getElementById('daysLeft').textContent       = daysLeft;
+    document.getElementById('remainBudget').textContent   = (remaining < 0 ? 0 : fmt(remaining)) + '원';
+    const pct = Math.min(100, Math.round(totalSpent / budget * 100));
+    document.getElementById('pctSpent').textContent         = pct;
+    document.getElementById('totalBudgetLabel').textContent = fmt(budget) + '원';
+    const fill = document.getElementById('progressFill');
+    fill.style.width = pct + '%';
+    fill.className   = 'progress-fill ' + (pct < 60 ? 'safe' : pct < 85 ? 'warn' : 'danger');
+    document.getElementById('overTag').innerHTML =
+      remaining < 0 ? '<span class="tag tag-over">예산 초과</span>'
+      : pct >= 85   ? '<span class="tag tag-warn">주의</span>'
+      : '<span class="tag tag-ok">양호</span>';
+  } else {
+    show('noBudgetBanner');
+    hide('heroCard');
+  }
+
+  show('summaryGrid'); show('addCard'); show('listCard');
+  document.getElementById('sBudget').textContent = fmt(budget);
+  document.getElementById('sSpent').textContent  = fmt(totalSpent);
+  document.getElementById('sRemain').textContent = fmt(remaining < 0 ? 0 : remaining);
+
+  // 홈 목록: 시즌 전체 항목 (excluded 포함, 표시용)
+  const { startStr: s0, endStr: e0 } = getPeriodRange(currentYear, currentMonth);
+  const seasonAllExp = [];
+  Object.values(data).forEach(mk => {
+    (mk.expenses || []).forEach(e => { if (e.date >= s0 && e.date <= e0) seasonAllExp.push(e); });
+  });
+  renderExpenses(seasonAllExp);
+}
+
+function renderExpenses(expenses, container, query) {
+  const listEl  = container || document.getElementById('expenseList');
+  const countEl = container ? null : document.getElementById('expenseCount');
+  const isHome  = !container;
+  if (countEl) countEl.textContent = expenses.length + '건';
+
+  if (!expenses.length) {
+    listEl.innerHTML = `<div class="empty-state"><div class="ei">📭</div>${query ? '검색 결과 없음' : '지출 내역이 없습니다.'}</div>`;
+    return;
+  }
+
+  const sorted = [...expenses].sort((a,b) => b.date.localeCompare(a.date));
+
+  if (isHome) {
+    // group by date
+    const groups = [];
+    let lastDate = null;
+    sorted.forEach(e => {
+      if (e.date !== lastDate) {
+        groups.push({ date: e.date, items: [] });
+        lastDate = e.date;
+      }
+      groups[groups.length - 1].items.push(e);
+    });
+
+    listEl.innerHTML = groups.map(g => {
+      const dayTotal = g.items.filter(e => !e.excluded).reduce((s,e) => s + e.amount, 0);
+      const dayExcluded = g.items.filter(e => e.excluded).reduce((s,e) => s + e.amount, 0);
+      const totalLabel = dayExcluded > 0
+        ? `−₩${fmt(dayTotal)} <span style="font-weight:400;color:#bbb;">+₩${fmt(dayExcluded)} 미반영</span>`
+        : `−₩${fmt(dayTotal)}`;
+      const itemsHtml = g.items.map(e => expenseItemHtml(e, query, true)).join('');
+      return `
+        <div class="date-group-label">${fmtDate(g.date)}<span style="margin-left:auto;margin-right:0;font-size:10px;color:var(--ink-muted);font-weight:700;">${totalLabel}</span></div>
+        ${itemsHtml}`;
+    }).join('');
+  } else {
+    listEl.innerHTML = sorted.map(e => expenseItemHtml(e, query, false)).join('');
+  }
+}
+
+function expenseItemHtml(e, query, showEdit) {
+  let nameHtml = esc(e.name);
+  if (query) {
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    nameHtml = nameHtml.replace(re, '<mark>$1</mark>');
+  }
+  const isExcluded = e.excluded === true;
+  const editBtn = showEdit
+    ? `<button class="exp-edit" onclick="openEditModal('${e.id}')" title="수정">✏️</button>`
+    : '';
+  const excludedBadge = isExcluded
+    ? `<span style="font-size:9px;background:#eee;color:#999;border-radius:4px;padding:1px 4px;margin-left:4px;font-weight:700;">미반영</span>`
+    : '';
+  const itemStyle   = isExcluded ? ' style="opacity:0.45;"' : '';
+  const amtStyle    = isExcluded ? ' style="color:#bbb;"' : ' style="color:#c8572a;"';
+  return `
+    <div class="expense-item"${itemStyle}>
+      <div class="exp-icon">${e.cat}</div>
+      <div class="exp-info">
+        <div class="exp-name">${nameHtml}${excludedBadge}</div>
+        ${!showEdit ? `<div class="exp-date">${fmtDate(e.date)}</div>` : ''}
+      </div>
+      <div class="exp-amt"${amtStyle}>−₩${fmt(e.amount)}</div>
+      <div class="exp-actions">
+        ${editBtn}
+        <button class="exp-del" onclick="deleteExpense('${e.id}')">×</button>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════
+// CALENDAR
+// ════════════════════════════════════════════
+function renderCalendar() {
+  const now  = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const lastDay  = new Date(currentYear, currentMonth, 0).getDate();
+
+  // 1일~말일 기준으로 전체 data 스캔
+  const calStart = `${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
+  const calEnd   = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const byDate = {};
+  Object.values(data).forEach(mk => {
+    (mk.expenses || []).forEach(e => {
+      if (e.date < calStart || e.date > calEnd) return;
+      if (!byDate[e.date]) byDate[e.date] = { included:0, excluded:0, items:[] };
+      if (e.excluded) byDate[e.date].excluded += e.amount;
+      else            byDate[e.date].included += e.amount;
+      byDate[e.date].items.push(e);
+    });
+  });
+
+  const dows = ['일','월','화','수','목','금','토'];
+  let html = dows.map((d,i) => `<div class="cal-dow${i===0?' cal-sun':i===6?' cal-sat':''}">${d}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = (firstDay + d - 1) % 7;
+    const isToday = dateStr === todayStr;
+    const info = byDate[dateStr];
+
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (dow === 0) cls += ' cal-sun';
+    if (dow === 6) cls += ' cal-sat';
+
+    let amtHtml = '';
+    if (info) {
+      if (info.included > 0) {
+        cls += ' has-expense';
+        amtHtml = `<div class="cal-amt">${fmt(info.included)}</div>`;
+      } else if (info.excluded > 0) {
+        amtHtml = `<div class="cal-amt excluded-amt">${fmt(info.excluded)}</div>`;
+      }
+      if (info.excluded > 0) cls += ' has-excluded';
+    }
+
+    html += `<div class="${cls}" onclick="showDayDetail('${dateStr}')">
+      <div class="cal-date-num">${d}</div>
+      ${amtHtml}
+    </div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+  document.getElementById('dayDetail').style.display = 'none';
+}
+
+function showDayDetail(dateStr) {
+  const items = [];
+  Object.values(data).forEach(mk => {
+    (mk.expenses || []).forEach(e => { if (e.date === dateStr) items.push(e); });
+  });
+  const [,m,d] = dateStr.split('-');
+  const days = ['일','월','화','수','목','금','토'];
+  const dow  = days[new Date(dateStr).getDay()];
+  const detailEl = document.getElementById('dayDetail');
+
+  if (!items.length) { detailEl.style.display = 'none'; return; }
+
+  const included = items.filter(e => !e.excluded).reduce((s,e) => s + e.amount, 0);
+  const excluded = items.filter(e =>  e.excluded).reduce((s,e) => s + e.amount, 0);
+  const totalLabel = excluded > 0
+    ? `₩${fmt(included)}<span style="font-size:10px;font-weight:400;color:var(--ink-muted);"> (반영 시 ₩${fmt(included + excluded)})</span>`
+    : `₩${fmt(included)}`;
+
+  detailEl.style.display = '';
+  detailEl.innerHTML = `
+    <div class="day-detail">
+      <div class="day-detail-title">${+m}월 ${+d}일 (${dow}) — 총 ${totalLabel}</div>
+      <div class="expense-list">
+        ${items.map(e => `
+          <div class="expense-item" style="${e.excluded ? 'opacity:0.45;' : ''}">
+            <div class="exp-icon">${e.cat}</div>
+            <div class="exp-info">
+              <div class="exp-name">${esc(e.name)}${e.excluded ? '<span style="font-size:9px;background:#eee;color:#999;border-radius:4px;padding:1px 4px;margin-left:4px;">미반영</span>' : ''}</div>
+            </div>
+            <div class="exp-amt" style="color:${e.excluded ? '#bbb' : '#c8572a'}">−₩${fmt(e.amount)}</div>
+            <button class="exp-del" onclick="deleteExpense('${e.id}')">×</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════
+// SEARCH & STATS
+// ════════════════════════════════════════════
+
+function toggleFolder(contentId, iconId) {
+  const el   = document.getElementById(contentId);
+  const icon = document.getElementById(iconId);
+  const open = el.style.display !== 'none';
+  el.style.display   = open ? 'none' : '';
+  icon.classList.toggle('closed', open);
+}
+
+function buildCatChips() {
+  const sel = document.getElementById('catFilter');
+  if (!sel) return;
+  sel.innerHTML =
+    `<option value="">전체 카테고리</option>` +
+    categories.map(c => `<option value="${c.emoji}">${c.emoji} ${c.name}</option>`).join('');
+  sel.value = selectedCat || '';
+  sel.className = 'cat-filter-select' + (selectedCat ? ' filtered' : '');
+}
+
+function selectCat(val) {
+  selectedCat = val || null;
+  const sel = document.getElementById('catFilter');
+  sel.className = 'cat-filter-select' + (selectedCat ? ' filtered' : '');
+  doSearch();
+}
+
+function selectPeriodChip(btn) {
+  document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriod = btn.dataset.period;
+  const customRow = document.getElementById('customDateRow');
+  customRow.style.display = activePeriod === 'custom' ? '' : 'none';
+  doSearch();
+}
+
+// Returns {fromStr, toStr} as 'YYYY-MM-DD' strings for timezone-safe comparison
+function getPeriodBounds() {
+  const cur = getCurrentPeriod();
+
+  if (activePeriod === 'custom') {
+    const f = document.getElementById('searchDateFrom').value;
+    const t = document.getElementById('searchDateTo').value;
+    if (!f || !t) return null;
+    return { fromStr: f, toStr: t };
+  }
+  if (activePeriod === 'this') {
+    const { startStr, endStr } = getPeriodRange(cur.y, cur.m);
+    return { fromStr: startStr, toStr: endStr };
+  }
+  if (activePeriod === 'prev') {
+    let py = cur.y, pm = cur.m - 1;
+    if (pm < 1) { pm = 12; py--; }
+    const { startStr, endStr } = getPeriodRange(py, pm);
+    return { fromStr: startStr, toStr: endStr };
+  }
+  if (activePeriod === 'all') {
+    return { fromStr: '2000-01-01', toStr: '2099-12-31' };
+  }
+  // numeric: N most recent seasons
+  const n = parseInt(activePeriod);
+  let py = cur.y, pm = cur.m;
+  for (let i = 1; i < n; i++) {
+    pm--; if (pm < 1) { pm = 12; py--; }
+  }
+  const { startStr } = getPeriodRange(py, pm);
+  const { endStr   } = getPeriodRange(cur.y, cur.m);
+  return { fromStr: startStr, toStr: endStr };
+}
+
+// Returns list of season keys covered by bounds (season-aware)
+function getSeasonsInBounds(bounds) {
+  if (!bounds) return [];
+  const seasons = [];
+  const allKeys = Object.keys(data).sort();
+  if (!allKeys.length) return [];
+  const [fy, fm] = allKeys[0].split('-').map(Number);
+  let y = fy, m = fm;
+  const maxIter = 120;
+  for (let i = 0; i < maxIter; i++) {
+    const { startStr, endStr } = getPeriodRange(y, m);
+    if (startStr <= bounds.toStr && endStr >= bounds.fromStr) {
+      seasons.push({ y, m, startStr, endStr });
+    }
+    if (startStr > bounds.toStr) break;
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return seasons;
+}
+
+let activeInnerTab = 'list'; // 'list' | 'stat'
+let searchResultCount = null; // null = 검색 없음, 숫자 = 현재 검색 결과 건수
+
+function switchInnerTab(tab) {
+  activeInnerTab = tab;
+  document.getElementById('itab-list').classList.toggle('active', tab === 'list');
+  document.getElementById('itab-stat').classList.toggle('active', tab === 'stat');
+  document.getElementById('ipanel-list').style.display = tab === 'list' ? '' : 'none';
+  document.getElementById('ipanel-stat').style.display = tab === 'stat' ? '' : 'none';
+}
+
+function doSearch() {
+  const query  = document.getElementById('searchInput').value.trim().toLowerCase();
+  const hasQuery = query.length > 0;
+  const hasCat   = selectedCat !== null;
+
+  const bounds = getPeriodBounds();
+  if (!bounds) return;
+
+  // Gather all expenses in bounds (string comparison — timezone safe)
+  const allInBounds = [];
+  Object.keys(data).forEach(mk => {
+    (data[mk].expenses || []).forEach(e => {
+      if (e.date >= bounds.fromStr && e.date <= bounds.toStr) allInBounds.push({ ...e, _month: mk });
+    });
+  });
+
+  // Filter by search+cat
+  const filtered = allInBounds.filter(e => {
+    const catMatch  = !hasCat  || e.cat === selectedCat;
+    const nameMatch = !hasQuery || e.name.toLowerCase().includes(query);
+    return catMatch && nameMatch;
+  });
+  filtered.sort((a,b) => b.date.localeCompare(a.date));
+
+  // ── RESULT LIST: always show (default = all in period when no query/cat) ──
+  const listSource = (hasQuery || hasCat) ? filtered : allInBounds.sort((a,b) => b.date.localeCompare(a.date));
+  const re = hasQuery
+    ? new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi')
+    : null;
+  document.getElementById('searchList').innerHTML = listSource.length
+    ? listSource.map(e => {
+        const nameHtml = re ? esc(e.name).replace(re, '<mark>$1</mark>') : esc(e.name);
+        const [y,m] = e._month.split('-');
+        const isExcluded = e.excluded === true;
+        return `
+        <div class="expense-item"${isExcluded ? ' style="opacity:0.45;"' : ''}>
+          <div class="exp-icon">${e.cat}</div>
+          <div class="exp-info">
+            <div class="exp-name">${nameHtml}</div>
+            <div class="exp-date">${y}년 ${fmtDate(e.date)}</div>
+          </div>
+          <div class="exp-amt" style="color:${isExcluded ? '#aaa' : '#c8572a'};">−₩${fmt(e.amount)}</div>
+        </div>`;
+      }).join('')
+    : `<div class="empty-state"><div class="ei">📭</div>내역이 없습니다</div>`;
+
+  // ── STATS: based on filtered source ──
+  const statsSource = (hasQuery || hasCat) ? filtered : allInBounds;
+  searchResultCount = (hasQuery || hasCat) ? filtered.length : null;
+  const countEl = document.getElementById('searchCount');
+  if (countEl) countEl.textContent = `총 ${listSource.length}건`;
+  renderSearchStats(statsSource, bounds);
+}
+
+function renderSearchStats(expenses, bounds) {
+  const cur    = getCurrentPeriod();
+  const seasons = getSeasonsInBounds(bounds);
+
+  // String-based range sum — timezone safe
+  const sumInRange = (fromStr, toStr) =>
+    expenses.filter(e => e.excluded !== true && e.date >= fromStr && e.date <= toStr)
+            .reduce((s,e) => s + e.amount, 0);
+
+  const grandTotal = expenses.filter(e => e.excluded !== true).reduce((s,e) => s + e.amount, 0);
+
+  // title: show date range (parse YYYY-MM-DD safely)
+  const fmtStr = s => { const [,m,d] = s.split('-'); return `${+m}/${+d}`; };
+  document.getElementById('statCardTitle').textContent =
+    bounds.fromStr === '2000-01-01'
+      ? ''
+      : `${fmtStr(bounds.fromStr)} ~ ${fmtStr(bounds.toStr)}`;
+
+  if (expenses.length === 0) {
+    document.getElementById('statCompareBars').innerHTML = '';
+    document.getElementById('statCats').innerHTML = `<div style="color:var(--ink-muted);font-size:12px;padding:8px 0;">데이터가 없습니다</div>`;
+    document.getElementById('statFoodWrap').style.display = 'none';
+    return;
+  }
+
+  // ── Monthly bar chart ──
+  const barsEl = document.getElementById('statCompareBars');
+  const seasonTotals = seasons.map(s => {
+    const [,sm] = s.startStr.split('-');
+    return {
+      label: `${+sm}월`,
+      total: sumInRange(s.startStr, s.endStr),
+      isCur: s.y === cur.y && s.m === cur.m
+    };
+  });
+  const maxVal = Math.max(...seasonTotals.map(s => s.total), 1);
+  barsEl.innerHTML = seasonTotals.map(s => `
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">${s.label}</div>
+      <div class="stat-bar-track">
+        <div class="stat-bar-fill${s.isCur ? '' : ' prev'}" style="width:${Math.round(s.total/maxVal*100)}%"></div>
+      </div>
+      <div class="stat-bar-amt">₩${fmt(s.total)}</div>
+    </div>`).join('');
+
+  // ── Category breakdown ──
+  // ── 카테고리 비중 ──
+  const isSinglePeriod = seasons.length <= 1;
+  const fmtStr2 = s => { const [,m,d] = s.split('-'); return `${+m}/${+d}`; };
+
+  if (isSinglePeriod) {
+    // 단일 기간: 기존 바 차트
+    const catMap = {};
+    expenses.filter(e => e.excluded !== true).forEach(e => {
+      catMap[e.cat] = (catMap[e.cat] || 0) + e.amount;
+    });
+    const catList = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+    const catMax  = catList[0]?.[1] || 1;
+    const exceededEmojis = new Set(
+      categories.filter(c => c.target > 0 && (catMap[c.emoji]||0) > c.target).map(c => c.emoji)
+    );
+    document.getElementById('statCats').innerHTML = catList.slice(0, 8).map(([emoji, amt]) => {
+      const isOver = exceededEmojis.has(emoji);
+      return `
+      <div class="stat-cat-row">
+        <div class="stat-cat-emoji">${emoji}</div>
+        <div class="stat-cat-track">
+          <div class="stat-cat-fill" style="width:${Math.round(amt/catMax*100)}%;${isOver ? 'background:#c0392b;' : ''}"></div>
+        </div>
+        <div class="stat-cat-info">
+          <div class="stat-cat-amt" style="${isOver ? 'color:#c0392b;' : ''}">₩${fmt(amt)}</div>
+          <div class="stat-cat-pct">${isOver ? '🚨 ' + (grandTotal > 0 ? Math.round(amt/grandTotal*100) : 0) + '%' : (grandTotal > 0 ? Math.round(amt/grandTotal*100) : 0) + '%'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    // 복수 기간: 기간별 카테고리 비중
+    const catMap = {};
+    expenses.filter(e => e.excluded !== true).forEach(e => {
+      catMap[e.cat] = (catMap[e.cat] || 0) + e.amount;
+    });
+    // 전체에서 등장한 카테고리 목록 (금액 내림차순, 최대 8개)
+    const topCats = Object.entries(catMap).sort((a,b) => b[1]-a[1]).slice(0, 8).map(([emoji]) => emoji);
+
+    const periodBlocks = seasons.map(s => {
+      const periodMap = {};
+      expenses
+        .filter(e => e.excluded !== true && e.date >= s.startStr && e.date <= s.endStr)
+        .forEach(e => { periodMap[e.cat] = (periodMap[e.cat] || 0) + e.amount; });
+      const periodTotal = Object.values(periodMap).reduce((a,b) => a+b, 0);
+      const periodMax = Math.max(...topCats.map(em => periodMap[em] || 0), 1);
+      const exceededEmojis = new Set(
+        categories.filter(c => c.target > 0 && (periodMap[c.emoji]||0) > c.target).map(c => c.emoji)
+      );
+      const rows = topCats
+        .filter(em => periodMap[em] > 0)
+        .map(em => {
+          const amt = periodMap[em];
+          const isOver = exceededEmojis.has(em);
+          return `
+          <div class="stat-cat-row" style="margin-bottom:3px;">
+            <div class="stat-cat-emoji">${em}</div>
+            <div class="stat-cat-track">
+              <div class="stat-cat-fill" style="width:${Math.round(amt/periodMax*100)}%;${isOver ? 'background:#c0392b;' : ''}"></div>
+            </div>
+            <div class="stat-cat-info">
+              <div class="stat-cat-amt" style="${isOver ? 'color:#c0392b;' : ''}">₩${fmt(amt)}</div>
+              <div class="stat-cat-pct">${isOver ? '🚨 ' : ''}${periodTotal > 0 ? Math.round(amt/periodTotal*100) : 0}%</div>
+            </div>
+          </div>`;
+        }).join('');
+      return rows ? `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+            ${fmtStr2(s.startStr)} ~ ${fmtStr2(s.endStr)}
+          </div>
+          ${rows}
+        </div>` : '';
+    }).filter(Boolean).join('');
+
+    document.getElementById('statCats').innerHTML = periodBlocks ||
+      `<div style="color:var(--ink-muted);font-size:12px;padding:8px 0;">데이터가 없습니다</div>`;
+  }
+
+  // ── 식비 합산 (기간별 카테고리 바 차트) ──
+  const foodCats = categories.filter(c => c.isFoodType);
+  const foodWrap = document.getElementById('statFoodWrap');
+  const foodRows = document.getElementById('statFoodRows');
+  if (foodCats.length > 0) {
+    const fmtStr = s => { const [,m,d] = s.split('-'); return `${+m}/${+d}`; };
+    const renderFoodBlock = (periodExpenses, label) => {
+      const foodItems = foodCats.map(c => {
+        const amt = periodExpenses
+          .filter(e => e.excluded !== true && e.cat === c.emoji)
+          .reduce((s,e) => s + e.amount, 0);
+        return { c, amt };
+      }).filter(r => r.amt > 0);
+      if (!foodItems.length) return '';
+      const foodTotal = foodItems.reduce((s,r) => s + r.amt, 0);
+      const foodMax = Math.max(...foodItems.map(r => r.amt), 1);
+      const header = label
+        ? `<div style="font-size:11px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">${label}</div>`
+        : '';
+      const bars = foodItems.map(r => `
+        <div class="stat-cat-row" style="margin-bottom:4px;">
+          <div class="stat-cat-emoji">${r.c.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;color:var(--ink-muted);margin-bottom:2px;">${esc(r.c.name)}</div>
+            <div class="stat-cat-track">
+              <div class="stat-cat-fill" style="width:${Math.round(r.amt / foodMax * 100)}%;"></div>
+            </div>
+          </div>
+          <div class="stat-cat-info">
+            <div class="stat-cat-amt">₩${fmt(r.amt)}</div>
+            <div class="stat-cat-pct">${foodTotal > 0 ? Math.round(r.amt / foodTotal * 100) : 0}%</div>
+          </div>
+        </div>`).join('');
+      const footer = foodItems.length > 1
+        ? `<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;padding-top:6px;border-top:1px solid var(--border);margin-top:6px;">
+            <span style="color:var(--ink-muted);">합계</span>
+            <span>₩${fmt(foodTotal)}</span>
+          </div>`
+        : '';
+      return `<div style="margin-bottom:${label ? '14px' : '0'};">${header}${bars}${footer}</div>`;
+    };
+
+    const isSingle = seasons.length <= 1;
+    let html = '';
+    if (isSingle) {
+      html = renderFoodBlock(expenses, '');
+    } else {
+      seasons.forEach(s => {
+        const periodExp = expenses.filter(e => e.date >= s.startStr && e.date <= s.endStr);
+        html += renderFoodBlock(periodExp, `${fmtStr(s.startStr)} ~ ${fmtStr(s.endStr)}`);
+      });
+    }
+    if (html) {
+      foodRows.innerHTML = html;
+      foodWrap.style.display = '';
+    } else {
+      foodWrap.style.display = 'none';
+    }
+  } else {
+    foodWrap.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════
+// COMMENT SYSTEM
+// ════════════════════════════════════════════
+const COMMENT_KEY = 'kakeibo_comments_v1';
+const COMMENT_CFG_KEY = 'kakeibo_comment_cfg_v1';
+
+let commentMode = false;
+let commentData = {}; // { '홈-범용': [...], '홈-예산초과': [...], ... }
+let lastComments = {}; // 반복 방지: { tabKey: lastText }
+
+// 조건 키 전체 목록
+const COMMENT_KEYS = [
+  '홈-범용','홈-시즌첫날','홈-시즌마지막날','홈-마지막날90미만','홈-마지막날80미만','홈-오늘0원','홈-연속무지출',
+  '홈-월요일','홈-화요일','홈-수요일','홈-목요일','홈-금요일','홈-토요일','홈-일요일',
+  '홈-예산초과','홈-예산90초과','홈-예산75초과','홈-예산50초과','홈-예산초기',
+  '홈-오늘예산초과','홈-오늘예산90초과','홈-오늘늦게여유',
+  '홈-7일이하','홈-7일이하절약',
+  '홈-오랜만에방문','홈-초반폭주','홈-야식','홈-보복소비','홈-주말방콕','홈-생존모드',
+  '홈-예산여유','홈-예산부족',
+  '캘린더-범용','캘린더-개근','캘린더-최다지출일','캘린더-주말최다',
+  '캘린더-공백25퍼','캘린더-공백50퍼','캘린더-전월증가','캘린더-전월감소',
+  '검색-범용',
+  '검색-지난달보다많음','검색-지난달보다적음',
+  '검색-건수5이하','검색-건수5초과','검색-최다카테고리','검색-카테고리집중',
+  '검색-카테고리증가','검색-카테고리감소',
+  '검색-식비건수초과','검색-목표초과','검색-단일건한방',
+];
+
+function loadCommentCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem(COMMENT_CFG_KEY) || '{}');
+    commentMode = !!c.commentMode;
+    commentData = JSON.parse(localStorage.getItem(COMMENT_KEY) || '{}');
+  } catch(e) {}
+}
+
+function saveCommentCfg() {
+  try { localStorage.setItem(COMMENT_CFG_KEY, JSON.stringify({ commentMode })); } catch(e) {}
+}
+
+function saveCommentMode() {
+  commentMode = document.getElementById('commentModeToggle').checked;
+  saveCommentCfg();
+  const mgr = document.getElementById('commentMgr');
+  mgr.style.display = commentMode ? 'flex' : 'none';
+  updateCommentCountLabel();
+  // 즉시 코멘트 표시/숨김
+  ['home','calendar','search'].forEach(t => {
+    document.getElementById('comment-' + t).style.display = 'none';
+  });
+  if (commentMode) showComment(activeTab);
+}
+
+function updateCommentCountLabel() {
+  const total = Object.values(commentData).reduce((s,a) => s + (a||[]).length, 0);
+  const el = document.getElementById('commentCountLabel');
+  if (el) el.textContent = total;
+}
+
+// ── 조건 평가 ──
+function evaluateCommentConditions(tab) {
+  const now   = new Date();
+  const hour  = now.getHours();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+  // 홈/검색은 오늘 기준 시즌, 캘린더는 현재 보고 있는 달 기준 시즌
+  const cur = getCurrentPeriod();
+
+  // 캘린더: 1일~말일, 홈/검색: 시즌 범위
+  let startStr, endStr;
+  if (tab === 'calendar') {
+    const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+    startStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
+    endStr   = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  } else {
+    const range = getPeriodRange(cur.y, cur.m);
+    startStr = range.startStr;
+    endStr   = range.endStr;
+  }
+  const viewY = tab === 'calendar' ? currentYear  : cur.y;
+  const viewM = tab === 'calendar' ? currentMonth : cur.m;
+
+  // 시즌 내 항목 (excluded 제외)
+  const inSeason = [];
+  Object.keys(data).forEach(mk => {
+    (data[mk].expenses||[]).forEach(e => {
+      if (e.excluded !== true && e.date >= startStr && e.date <= endStr) inSeason.push(e);
+    });
+  });
+
+  const totalSpent = inSeason.reduce((s,e) => s + e.amount, 0);
+  const budget = getEffectiveBudget(viewY, viewM);
+  const pct = budget > 0 ? totalSpent / budget * 100 : 0;
+  const daysLeft = getDaysLeftInPeriod(cur.y, cur.m);
+
+  // 오늘 지출
+  const todaySpent = inSeason.filter(e => e.date === todayStr).reduce((s,e) => s + e.amount, 0);
+  const daysTotal = (() => {
+    const [sy,sm,sd] = startStr.split('-').map(Number);
+    const [ey,em,ed] = endStr.split('-').map(Number);
+    return Math.round((new Date(ey,em-1,ed) - new Date(sy,sm-1,sd)) / 86400000) + 1;
+  })();
+  const dailyBudget = daysLeft > 0 ? Math.floor((budget - totalSpent) / daysLeft) : 0;
+
+  const candidates = [];
+
+  const pick = key => {
+    if ((commentData[key]||[]).length > 0) candidates.push(key);
+  };
+
+  if (tab === 'home') {
+    pick('홈-범용');
+    // 요일
+    const weekdays = ['홈-일요일','홈-월요일','홈-화요일','홈-수요일','홈-목요일','홈-금요일','홈-토요일'];
+    pick(weekdays[now.getDay()]);
+
+    if (todayStr === startStr)  pick('홈-시즌첫날');
+    if (todayStr === endStr) {
+      pick('홈-시즌마지막날');
+      if (budget > 0) {
+        if (pct < 80) pick('홈-마지막날80미만');
+        else if (pct < 90) pick('홈-마지막날90미만');
+      }
+    }
+    if (budget > 0 && todaySpent === 0) pick('홈-오늘0원');
+
+    // 연속 무지출: 어제도 오늘도 지출 0원
+    const now3 = new Date(); now3.setDate(now3.getDate() - 1);
+    const yesterdayStr = `${now3.getFullYear()}-${String(now3.getMonth()+1).padStart(2,'0')}-${String(now3.getDate()).padStart(2,'0')}`;
+    const yesterdaySpent = inSeason.filter(e => e.date === yesterdayStr).reduce((s,e)=>s+e.amount,0);
+    if (budget > 0 && todaySpent === 0 && yesterdaySpent === 0) pick('홈-연속무지출');
+    if (budget > 0) {
+      if (totalSpent > budget)        pick('홈-예산초과');
+      else if (pct > 90)              pick('홈-예산90초과');
+      else if (pct > 75)              pick('홈-예산75초과');
+      else if (pct > 50)              pick('홈-예산50초과');
+      else if (pct === 0)             pick('홈-예산초기');
+
+      if (daysLeft <= 7)              pick('홈-7일이하');
+      if (daysLeft <= 7 && pct < 70)  pick('홈-7일이하절약');
+
+      // 생존모드: 남은 날 대비 오늘 권장 예산이 4000원 이하
+      if (daysLeft > 0 && dailyBudget <= 4000 && budget - totalSpent < budget * 0.5) pick('홈-생존모드');
+
+      // 예산여유/예산부족: 남은 예산 % vs 남은 날 % 비교
+      if (daysTotal > 0 && budget > 0 && daysLeft > 0 && totalSpent < budget) {
+        const remainBudgetPct = (budget - totalSpent) / budget * 100;  // 남은 예산 %
+        const remainDayPct    = daysLeft / daysTotal * 100;             // 남은 날 %
+        if (remainBudgetPct > remainDayPct) pick('홈-예산여유');        // 돈이 시간보다 많이 남음
+        else if (remainBudgetPct < remainDayPct) pick('홈-예산부족');   // 돈이 시간보다 적게 남음
+      }
+
+      const todayBudgetAmt = daysLeft > 0 ? Math.floor((budget - totalSpent) / daysLeft) : 0;
+      if (todayBudgetAmt > 0 || todaySpent > 0) {
+        if (todaySpent > todayBudgetAmt)  pick('홈-오늘예산초과');
+        else if (todayBudgetAmt > 0 && todaySpent / todayBudgetAmt * 100 > 90) pick('홈-오늘예산90초과');
+        if (hour >= 21 && todayBudgetAmt > 0 && todaySpent / todayBudgetAmt * 100 < 30) pick('홈-오늘늦게여유');
+      }
+    }
+
+    // ── 오랜만에 방문: 전체 데이터 기준 마지막 지출일이 30일 이상 전
+    const allExpenses = Object.values(data).flatMap(d => d.expenses||[]).filter(e => e.excluded !== true);
+    if (allExpenses.length > 0) {
+      const lastDate = allExpenses.map(e=>e.date).sort().at(-1);
+      const daysSinceLast = Math.round((new Date(todayStr) - new Date(lastDate+'T12:00')) / 86400000);
+      if (daysSinceLast >= 30) pick('홈-오랜만에방문');
+    }
+
+    // ── 초반폭주: 기간의 30% 이내인데 예산 45% 이상 사용
+    if (budget > 0 && daysTotal > 0) {
+      const elapsedDays = daysTotal - daysLeft;
+      if (elapsedDays <= daysTotal * 0.30 && pct >= 45) pick('홈-초반폭주');
+    }
+
+    // ── 야식: 새벽 0시~5시 사이 식비 지출 존재 (오늘)
+    const foodEmojisHome = new Set(categories.filter(c => c.isFoodType).map(c => c.emoji));
+    if (foodEmojisHome.size > 0 && hour < 5) {
+      // 오늘 날짜의 식비 항목이 1건 이상이면 발동 (시간 기록 없으므로 현재 시각으로 판단)
+      const todayFoodCnt = inSeason.filter(e => e.date === todayStr && foodEmojisHome.has(e.cat)).length;
+      if (todayFoodCnt > 0) pick('홈-야식');
+    }
+
+    // ── 보복소비: 3일 이상 연속 무지출 직후 하루 예산의 3배 이상 지출
+    if (budget > 0 && daysTotal > 0) {
+      const dailyBudgetBase = budget / daysTotal;
+      if (todaySpent >= dailyBudgetBase * 3) {
+        // 어제~3일 전까지 연속 무지출 확인
+        let streak = 0;
+        for (let i = 1; i <= 10; i++) {
+          const d2 = new Date(todayStr + 'T12:00'); d2.setDate(d2.getDate() - i);
+          const ds2 = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`;
+          const spent2 = inSeason.filter(e => e.date === ds2).reduce((s,e)=>s+e.amount,0);
+          if (spent2 === 0) streak++;
+          else break;
+        }
+        if (streak >= 3) pick('홈-보복소비');
+      }
+    }
+
+    // ── 주말방콕: 일요일 저녁(18시~) 또는 월요일(전체), 지난 토·일 지출이 모두 0원
+    const dow = now.getDay();
+    if ((dow === 0 && hour >= 21) || dow === 1) {
+      // 지난 토요일, 일요일 날짜 계산
+      const daysToSat = dow === 0 ? 1 : 2;
+      const daysToSun = dow === 0 ? 0 : 1;
+      const satD = new Date(todayStr+'T12:00'); satD.setDate(satD.getDate() - daysToSat);
+      const sunD = new Date(todayStr+'T12:00'); sunD.setDate(sunD.getDate() - daysToSun);
+      const satStr = `${satD.getFullYear()}-${String(satD.getMonth()+1).padStart(2,'0')}-${String(satD.getDate()).padStart(2,'0')}`;
+      const sunStr = `${sunD.getFullYear()}-${String(sunD.getMonth()+1).padStart(2,'0')}-${String(sunD.getDate()).padStart(2,'0')}`;
+      const allExp = Object.values(data).flatMap(d2=>d2.expenses||[]).filter(e=>e.excluded!==true);
+      const satSpent = allExp.filter(e=>e.date===satStr).reduce((s,e)=>s+e.amount,0);
+      const sunSpent = allExp.filter(e=>e.date===sunStr).reduce((s,e)=>s+e.amount,0);
+      if (satSpent === 0 && sunSpent === 0) pick('홈-주말방콕');
+    }
+  }
+
+  if (tab === 'calendar') {
+    pick('캘린더-범용');
+
+    // 1일~오늘까지 루프, 기록 없는 날 카운트
+    const dateSet = new Set(inSeason.map(e => e.date));
+    let noExpDays = 0, totalDaysChecked = 0, allDaysHaveExp = true;
+    const iterEnd = todayStr < endStr ? todayStr : endStr;
+    let d = new Date(currentYear, currentMonth - 1, 1, 12);
+    while (true) {
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (ds > iterEnd) break;
+      totalDaysChecked++;
+      if (!dateSet.has(ds)) { noExpDays++; allDaysHaveExp = false; }
+      d.setDate(d.getDate() + 1);
+    }
+    if (allDaysHaveExp && totalDaysChecked > 0) pick('캘린더-개근');
+    // 공백 비율: 25% 이상이면 공백25퍼 조건, 50% 이상이면 공백50퍼 조건
+    if (totalDaysChecked > 0) {
+      const blankRatio = noExpDays / totalDaysChecked;
+      if (blankRatio >= 0.25) pick('캘린더-공백25퍼');
+      if (blankRatio >= 0.50) pick('캘린더-공백50퍼');
+    }
+
+    // 가장 많이 쓴 날 (1일~말일 기준)
+    if (inSeason.length > 0) pick('캘린더-최다지출일');
+
+    // 주말 지출 vs 평일 지출
+    const weekendTotal = inSeason.filter(e => { const dow = new Date(e.date+'T12:00').getDay(); return dow===0||dow===6; }).reduce((s,e)=>s+e.amount,0);
+    const weekdayTotal = inSeason.filter(e => { const dow = new Date(e.date+'T12:00').getDay(); return dow>=1&&dow<=5; }).reduce((s,e)=>s+e.amount,0);
+    if (weekendTotal > 0 && weekdayTotal > 0 && weekendTotal > weekdayTotal) pick('캘린더-주말최다');
+
+    // 전월 같은 기간 비교 (1일~오늘 일수만큼)
+    const todayDay = parseInt(todayStr.split('-')[2], 10);
+    const prevMo = currentMonth - 1 <= 0 ? 12 : currentMonth - 1;
+    const prevYr = currentMonth - 1 <= 0 ? currentYear - 1 : currentYear;
+    const prevLastDay = new Date(prevYr, prevMo, 0).getDate();
+    const prevSameEndDay = Math.min(todayDay, prevLastDay);
+    const prevSameEnd   = `${prevYr}-${String(prevMo).padStart(2,'0')}-${String(prevSameEndDay).padStart(2,'0')}`;
+    const prevSameStart = `${prevYr}-${String(prevMo).padStart(2,'0')}-01`;
+    const prevSameTotal = Object.values(data).flatMap(d=>d.expenses||[])
+      .filter(e => e.excluded !== true && e.date >= prevSameStart && e.date <= prevSameEnd)
+      .reduce((s,e)=>s+e.amount,0);
+    if (prevSameTotal > 0) {
+      if (totalSpent > prevSameTotal) pick('캘린더-전월증가');
+      if (totalSpent < prevSameTotal) pick('캘린더-전월감소');
+    }
+  }
+
+  if (tab === 'search') {
+    pick('검색-범용');
+
+    // 이번달 vs 지난달 같은 기간 비교 (시즌 시작~오늘 경과일수)
+    const { startStr: thisStart } = getPeriodRange(cur.y, cur.m);
+    const prevMoS = cur.m - 1 <= 0 ? 12 : cur.m - 1;
+    const prevYrS = cur.m - 1 <= 0 ? cur.y - 1 : cur.y;
+    const { startStr: prevStart } = getPeriodRange(prevYrS, prevMoS);
+    const [sy,sm,sd] = thisStart.split('-').map(Number);
+    const elapsedDays = Math.round((new Date(cur.y, cur.m-1, now.getDate()) - new Date(sy, sm-1, sd)) / 86400000) + 1;
+    const prevEndDate = new Date(prevYrS, prevMoS-1, parseInt(prevStart.split('-')[2],10) + elapsedDays - 1);
+    const prevEnd3 = `${prevEndDate.getFullYear()}-${String(prevEndDate.getMonth()+1).padStart(2,'0')}-${String(prevEndDate.getDate()).padStart(2,'0')}`;
+    const prevTotal3 = Object.values(data).flatMap(d=>d.expenses||[])
+      .filter(e => e.excluded !== true && e.date >= prevStart && e.date <= prevEnd3)
+      .reduce((s,e)=>s+e.amount,0);
+    if (totalSpent > prevTotal3 && prevTotal3 > 0) pick('검색-지난달보다많음');
+    if (totalSpent < prevTotal3 && prevTotal3 > 0) pick('검색-지난달보다적음');
+
+    // 건수: 검색 중이면 검색 결과 건수, 아니면 시즌 전체 건수
+    const cnt = searchResultCount !== null ? searchResultCount : inSeason.length;
+    if (cnt > 0 && cnt <= 5) pick('검색-건수5이하');
+    if (cnt > 5)             pick('검색-건수5초과');
+
+    // 최다 카테고리
+    if (inSeason.length > 0) pick('검색-최다카테고리');
+
+    // 카테고리집중: 1위 카테고리가 전체의 50% 이상
+    const catTotalsS = {};
+    inSeason.forEach(e => { catTotalsS[e.cat] = (catTotalsS[e.cat]||0) + e.amount; });
+    if (totalSpent > 0) {
+      const topCatAmt = Math.max(0, ...Object.values(catTotalsS));
+      if (topCatAmt / totalSpent >= 0.5) pick('검색-카테고리집중');
+    }
+
+    // 카테고리 증가/감소 — 지난달 같은 기간과 비교
+    const prevM2 = cur.m - 1 <= 0 ? 12 : cur.m - 1;
+    const prevY2 = cur.m - 1 <= 0 ? cur.y - 1 : cur.y;
+    const { startStr: ps2, endStr: pe2 } = getPeriodRange(prevY2, prevM2);
+    const prevCatTotals = {};
+    Object.values(data).flatMap(d2=>d2.expenses||[])
+      .filter(e => e.excluded !== true && e.date >= ps2 && e.date <= pe2)
+      .forEach(e => { prevCatTotals[e.cat] = (prevCatTotals[e.cat]||0) + e.amount; });
+    const increasedCats = Object.keys(catTotalsS).filter(em => prevCatTotals[em] && catTotalsS[em] > prevCatTotals[em]);
+    const decreasedCats = Object.keys(catTotalsS).filter(em => prevCatTotals[em] && catTotalsS[em] < prevCatTotals[em]);
+    if (increasedCats.length > 0) pick('검색-카테고리증가');
+    if (decreasedCats.length > 0) pick('검색-카테고리감소');
+
+    // 식비 건수 초과 — 식비체크 카테고리 항목 건수가 (경과일×2)건 초과
+    const foodEmojis = new Set(categories.filter(c => c.isFoodType).map(c => c.emoji));
+    if (foodEmojis.size > 0) {
+      const periodRange = getPeriodRange(cur.y, cur.m);
+      const [psy, psm, psd] = periodRange.startStr.split('-').map(Number);
+      const elapsedDaysFood = Math.round((new Date(cur.y, cur.m-1, now.getDate()) - new Date(psy, psm-1, psd)) / 86400000) + 1;
+      const foodCnt = inSeason.filter(e => foodEmojis.has(e.cat)).length;
+      if (foodCnt > elapsedDaysFood * 2) pick('검색-식비건수초과');
+    }
+
+    // 목표초과 — 목표액 설정된 카테고리 중 초과한 게 있을 때
+    const targetCats = categories.filter(c => c.target > 0);
+    if (targetCats.length > 0) {
+      const catSpent = {};
+      inSeason.forEach(e => { catSpent[e.cat] = (catSpent[e.cat]||0) + e.amount; });
+      const exceeded = targetCats.filter(c => (catSpent[c.emoji]||0) > c.target);
+      if (exceeded.length > 0) pick('검색-목표초과');
+    }
+
+    // 단일건한방: 한 건의 지출이 이번 달 전체 예산의 30% 이상
+    if (budget > 0 && inSeason.length > 0) {
+      const maxSingle = Math.max(...inSeason.map(e => e.amount));
+      if (maxSingle >= budget * 0.30) pick('검색-단일건한방');
+    }
+  }
+
+  return candidates;
+}
+
+// ── 변수 치환 ──
+function applyCommentVars(text, chosenKey) {
+  const cur = getCurrentPeriod();
+  const { startStr, endStr } = getPeriodRange(cur.y, cur.m);
+
+  // 탭에 따라 범위 결정: 캘린더 키면 1일~말일, 아니면 시즌 범위
+  const isCal = chosenKey.startsWith('캘린더-');
+  let rangeStart = startStr, rangeEnd = endStr;
+  if (isCal) {
+    const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+    rangeStart = `${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
+    rangeEnd   = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  }
+
+  const inRange = [];
+  Object.values(data).forEach(mk => {
+    (mk.expenses||[]).forEach(e => {
+      if (e.excluded !== true && e.date >= rangeStart && e.date <= rangeEnd) inRange.push(e);
+    });
+  });
+
+  const daysLeft = getDaysLeftInPeriod(cur.y, cur.m);
+  const totalCount = (chosenKey.startsWith('검색-') && searchResultCount !== null)
+    ? searchResultCount
+    : inRange.length;
+
+  // 최다 카테고리
+  const catTotals = {};
+  inRange.forEach(e => { catTotals[e.cat] = (catTotals[e.cat]||0) + e.amount; });
+  const topCatEmoji = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
+  const topCatName  = (categories.find(c=>c.emoji===topCatEmoji)||{name:topCatEmoji}).name;
+
+  // 카테고리 증가/감소 변수
+  let prevY = cur.y, prevM = cur.m - 1;
+  if (prevM < 1) { prevM = 12; prevY--; }
+  const { startStr: ps, endStr: pe } = getPeriodRange(prevY, prevM);
+  const prevCatTotals = {};
+  Object.values(data).flatMap(d2=>d2.expenses||[])
+    .filter(e => e.excluded !== true && e.date >= ps && e.date <= pe)
+    .forEach(e => { prevCatTotals[e.cat] = (prevCatTotals[e.cat]||0) + e.amount; });
+
+  let catVarName = topCatName;
+  if (chosenKey === '검색-카테고리증가') {
+    const pool = Object.keys(catTotals).filter(em => prevCatTotals[em] && catTotals[em] > prevCatTotals[em]);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick) catVarName = (categories.find(c=>c.emoji===pick)||{name:pick}).name;
+  } else if (chosenKey === '검색-카테고리감소') {
+    const pool = Object.keys(catTotals).filter(em => prevCatTotals[em] && catTotals[em] < prevCatTotals[em]);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick) catVarName = (categories.find(c=>c.emoji===pick)||{name:pick}).name;
+  } else if (chosenKey === '검색-카테고리집중') {
+    const totalAmt = inRange.reduce((s,e)=>s+e.amount,0);
+    const topEm = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
+    if (topEm && totalAmt > 0 && catTotals[topEm] / totalAmt >= 0.5)
+      catVarName = (categories.find(c=>c.emoji===topEm)||{name:topEm}).name;
+  } else if (chosenKey === '검색-목표초과') {
+    const catSpent = {};
+    inRange.forEach(e => { catSpent[e.cat] = (catSpent[e.cat]||0) + e.amount; });
+    const exceeded = categories.filter(c => c.target > 0 && (catSpent[c.emoji]||0) > c.target);
+    if (exceeded.length > 0) {
+      const p = exceeded[Math.floor(Math.random() * exceeded.length)];
+      catVarName = p.name;
+    }
+  }
+
+  // 가장 많이 쓴 날 (범위 내 일별 합산 후 최대)
+  const dayTotals = {};
+  inRange.forEach(e => { dayTotals[e.date] = (dayTotals[e.date]||0) + e.amount; });
+  const topDay = Object.entries(dayTotals).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
+  const topDayFmt = topDay ? (() => { const [,m,d] = topDay.split('-'); return `${+m}월 ${+d}일`; })() : '';
+
+  // 조사 자동 선택: 마지막 글자 받침 유무로 결정
+  function hasBatchim(word) {
+    if (!word) return true;
+    const code = word.charCodeAt(word.length - 1);
+    if (code < 0xAC00 || code > 0xD7A3) return true;
+    return (code - 0xAC00) % 28 > 0;
+  }
+  function batchimCode(word) {
+    if (!word) return -1;
+    const code = word.charCodeAt(word.length - 1);
+    if (code < 0xAC00 || code > 0xD7A3) return -1;
+    return (code - 0xAC00) % 28;
+  }
+  function josa(word, withBatchim, withoutBatchim) {
+    return hasBatchim(word) ? withBatchim : withoutBatchim;
+  }
+
+  // {카테고리} 치환 후 뒤따르는 조사를 받침에 맞게 자동 교정
+  function replaceWithJosa(str, varName, value) {
+    // 다중 글자 조사 먼저 처리 (긴 것 우선)
+    const multiRules = [
+      ['이라니', '라니'],   // 받침O: 이라니, 받침X: 라니
+      ['이라고', '라고'],
+      ['이라면', '라면'],
+      ['이라도', '라도'],
+      ['이라서', '라서'],
+      ['이라는', '라는'],
+      ['이라니', '라니'],
+      ['이며',   '며' ],
+      ['이랑',   '랑' ],
+      ['이나',   '나' ],
+      ['이야',   '야' ],
+    ];
+    // 으로/로 특수 처리: 받침 없거나 받침이 ㄹ(8)이면 '로', 나머지 받침이면 '으로'
+    str = str.replace(new RegExp(`\\{${varName}\\}(으로|로)`, 'g'), () => {
+      const bc = batchimCode(value);
+      return value + (bc === 0 || bc === 8 ? '로' : '으로');
+    });
+    for (const [withB, withoutB] of multiRules) {
+      str = str.replace(new RegExp(`\\{${varName}\\}(${withB}|${withoutB})`, 'g'),
+        () => value + josa(value, withB, withoutB));
+    }
+    // 단일 글자 조사
+    str = str.replace(new RegExp(`\\{${varName}\\}([이가은는을를])`, 'g'),
+      (_, particle) => {
+        const pairs = { '이':'이', '가':'이', '은':'은', '는':'은', '을':'을', '를':'을' };
+        const key = pairs[particle];
+        const [withB, withoutB] = { '이':['이','가'], '은':['은','는'], '을':['을','를'] }[key];
+        return value + josa(value, withB, withoutB);
+      });
+    return str.replace(new RegExp(`\\{${varName}\\}`, 'g'), value);
+  }
+
+  let result = text
+    .replace(/\{건수\}일/g, totalCount + '일')
+    .replace(/\{건수\}/g, totalCount)
+    .replace(/\{날짜\}/g, topDayFmt)
+    .replace(/\{남은날\}일/g, daysLeft + '일')
+    .replace(/\{남은날\}/g, daysLeft);
+  result = replaceWithJosa(result, '카테고리', catVarName);
+  return result;
+}
+
+// ── 코멘트 표시 ──
+function showComment(tab) {
+  const boxes = { home:'comment-home', calendar:'comment-calendar', search:'comment-search' };
+  // 모든 박스 숨김
+  Object.values(boxes).forEach(id => document.getElementById(id).style.display = 'none');
+
+  if (!commentMode) return;
+  const boxId = boxes[tab];
+  if (!boxId) return;
+
+  const candidates = evaluateCommentConditions(tab);
+  if (!candidates.length) return;
+
+  // 후보 키 중 실제 텍스트가 있는 키만 추림
+  const validCandidates = candidates.filter(k => (commentData[k] || []).length > 0);
+  if (!validCandidates.length) return;
+
+  // 직전에 표시한 (키, 텍스트) 조합
+  const lastKey  = lastComments[tab + '_key'];
+  const lastText = lastComments[tab + '_text'];
+
+  // 전체 (키, 텍스트) 쌍 목록 생성
+  const allPairs = [];
+  validCandidates.forEach(k => {
+    (commentData[k] || []).forEach(t => allPairs.push({ k, t }));
+  });
+
+  // 직전과 같은 (키+텍스트) 조합 제외 — 다른 쌍이 있을 때만
+  const filtered = allPairs.length > 1
+    ? allPairs.filter(p => !(p.k === lastKey && p.t === lastText))
+    : allPairs;
+
+  const chosen = filtered[Math.floor(Math.random() * filtered.length)];
+  if (!chosen) return;
+
+  const text = applyCommentVars(chosen.t, chosen.k);
+  lastComments[tab + '_key']  = chosen.k;
+  lastComments[tab + '_text'] = chosen.t;
+
+  const el = document.getElementById(boxId);
+  el.style.display = '';
+  el.innerHTML = `<div class="comment-text">${esc(text)}</div>`;
+}
+
+// ── 파일 가져오기 ──
+function importComments(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseCommentFile(e.target.result);
+    const total = Object.values(parsed).reduce((s,a)=>s+a.length,0);
+    if (total === 0) { alert('코멘트를 찾을 수 없습니다.\n양식을 확인해주세요.'); return; }
+    commentData = parsed;
+    try { localStorage.setItem(COMMENT_KEY, JSON.stringify(commentData)); } catch(e2) {}
+    updateCommentCountLabel();
+    alert(`✅ ${total}개 코멘트를 불러왔습니다.`);
+    showComment(activeTab);
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function parseCommentFile(text) {
+  const result = {};
+  let currentKey = null;
+  text.split('\n').forEach(rawLine => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('//')) return; // 빈줄·주석 무시
+    const m = line.match(/^@@\s*(.+)$/);
+    if (m) {
+      currentKey = m[1].trim();
+      if (!result[currentKey]) result[currentKey] = [];
+    } else if (currentKey && line) {
+      result[currentKey].push(line);
+    }
+  });
+  return result;
+}
+
+// ── 파일 내보내기 ──
+function resetComments() {
+  if (!confirm('로드된 코멘트를 모두 삭제할까요?')) return;
+  commentData = {};
+  try { localStorage.removeItem(COMMENT_KEY); } catch(e) {}
+  updateCommentCountLabel();
+  ['home','calendar','search'].forEach(t => {
+    document.getElementById('comment-' + t).style.display = 'none';
+  });
+}
+
+function exportComments() {
+  if (Object.keys(commentData).length === 0) { alert('로드된 코멘트가 없습니다.'); return; }
+  const lines = [];
+  COMMENT_KEYS.forEach(k => {
+    lines.push(`@@ ${k}`);
+    (commentData[k]||[]).forEach(t => lines.push(t));
+    lines.push('');
+  });
+  dlBlob(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}),
+    `가계부_코멘트_${todayStamp()}.txt`);
+}
+
+function exportCommentTemplate() {
+  const vars = {
+    '검색-건수5이하':    '사용 가능 변수: {건수}',
+    '검색-건수5초과':    '사용 가능 변수: {건수}',
+    '검색-최다카테고리': '사용 가능 변수: {카테고리}',
+    '검색-카테고리집중': '사용 가능 변수: {카테고리}',
+    '검색-카테고리증가': '사용 가능 변수: {카테고리}',
+    '검색-카테고리감소': '사용 가능 변수: {카테고리}',
+    '검색-목표초과':     '사용 가능 변수: {카테고리}',
+    '캘린더-최다지출일': '사용 가능 변수: {날짜}',
+    '홈-7일이하':        '사용 가능 변수: {남은날}',
+    '홈-7일이하절약':    '사용 가능 변수: {남은날}',
+  };
+  const condDesc = {
+    '홈-범용':           '항상 후보에 오르는 기본 코멘트',
+    '홈-시즌첫날':       '이번 달 기간 시작 첫날',
+    '홈-시즌마지막날':   '이번 달 기간 마지막 날',
+    '홈-마지막날90미만': '기간 마지막 날, 예산 사용량 80~90% (10% 이상 남김)',
+    '홈-마지막날80미만': '기간 마지막 날, 예산 사용량 80% 미만 (20% 이상 남김)',
+    '홈-오늘0원':        '오늘 지출이 0원일 때',
+    '홈-연속무지출':     '어제도 오늘도 지출이 0원일 때',
+    '홈-월요일':         '월요일',
+    '홈-화요일':         '화요일',
+    '홈-수요일':         '수요일',
+    '홈-목요일':         '목요일',
+    '홈-금요일':         '금요일',
+    '홈-토요일':         '토요일',
+    '홈-일요일':         '일요일',
+    '홈-예산초기':       '이번 달 기간 지출이 아직 없을 때 (0%)',
+    '홈-예산50초과':     '예산 50~75% 사용',
+    '홈-예산75초과':     '예산 75~90% 사용',
+    '홈-예산90초과':     '예산 90~100% 사용',
+    '홈-예산초과':       '예산 100% 초과 (초과 지출)',
+    '홈-오늘예산초과':   '오늘 예산 초과',
+    '홈-오늘예산90초과': '오늘 예산 90% 초과',
+    '홈-오늘늦게여유':   '오후 9시 이후, 오늘 예산 30% 미만 사용',
+    '홈-7일이하':        '이번 달 기간 종료 7일 이하 남음',
+    '홈-7일이하절약':    '7일 이하 남았지만 예산 사용량 70% 미만',
+    '홈-오랜만에방문':   '마지막 지출 기록이 오늘로부터 30일 이상 전',
+    '홈-초반폭주':       '기간의 30% 이내인데 예산 45% 이상 사용',
+    '홈-야식':           '새벽 0시~5시 사이, 오늘 식비 지출 있음',
+    '홈-보복소비':       '3일 이상 연속 무지출 직후 하루 평균예산의 3배 이상 지출',
+    '홈-주말방콕':       '일요일 저녁(21시~) 또는 월요일, 지난 토·일 지출이 모두 0원',
+    '홈-생존모드':       '남은 날 기준 오늘 권장 예산이 4,000원 이하로 떨어짐',
+    '홈-예산여유':       '남은 예산 % > 남은 날 % (예산 소진 속도가 안정적임)',
+    '홈-예산부족':       '남은 예산 % < 남은 날 % (지출 속도가 예산을 앞지르는 중)',
+    '캘린더-범용':       '캘린더 탭 기본 코멘트',
+    '캘린더-개근':       '1일~오늘까지 매일 지출 내역 있음 (매일 지출했거나 / 매일 기록을 빠짐없이 작성했거나)',
+    '캘린더-최다지출일': '이번 달 가장 많이 지출한 날',
+    '캘린더-주말최다':   '주말 지출 합계가 평일 지출 합계보다 많을 때',
+    '캘린더-공백25퍼':   '1일~오늘 중 기록 없는 날이 25% 이상 (그만큼 지출을 안 했거나 / 기록을 빼먹었거나)',
+    '캘린더-공백50퍼':   '1일~오늘 중 기록 없는 날이 50% 이상 (그만큼 지출을 안 했거나 / 기록을 빼먹었거나)',
+    '캘린더-전월증가':   '전월 같은 기간 대비 지출 증가',
+    '캘린더-전월감소':   '전월 같은 기간 대비 지출 감소',
+    '검색-범용':         '항상 후보에 오르는 기본 코멘트',
+    '검색-지난달보다많음':'이번 달 기간 지출이 지난달 같은 기간보다 많을 때',
+    '검색-지난달보다적음':'이번 달 기간 지출이 지난달 같은 기간보다 적을 때',
+    '검색-건수5이하':   '이번 달 기간 총 지출 건수 5개 이하',
+    '검색-건수5초과':   '이번 달 기간 총 지출 건수 5개 초과',
+    '검색-최다카테고리': '가장 많이 지출한 카테고리',
+    '검색-카테고리집중': '1위 카테고리가 전체 지출의 50% 이상 ({카테고리}에 카테고리명 삽입)',
+    '검색-카테고리증가': '지난달보다 지출이 늘어난 카테고리',
+    '검색-카테고리감소': '지난달보다 지출이 줄어든 카테고리',
+    '검색-식비건수초과': '식비 카테고리 항목 건수가 (경과일×2)건 초과',
+    '검색-목표초과':     '목표액 설정된 카테고리 중 초과한 항목 있을 때',
+    '검색-단일건한방':   '단 한 건의 지출이 이번 달 전체 예산의 30% 이상을 차지할 때',
+  };
+
+  const lines = [
+    '// 가계부 코멘트 파일',
+    '// ─────────────────────────────────────',
+    '// 작성 방법:',
+    '//   @@ 조건키  ← 이 줄로 그룹 시작',
+    '//   코멘트 내용  ← 한 줄에 하나씩 (각 줄은 독립적인 대사입니다)',
+    '//   (빈 줄과 // 로 시작하는 줄은 무시됩니다)',
+    '//',
+    '// 팁:',
+    '//   범용 조건(-범용)은 다른 조건보다 코멘트를 여러 줄 작성하는 것을 권장합니다.',
+    '//   공백25퍼/공백50퍼의 "공백"은 기록을 빼먹었거나 소비가 없었던 날을 의미합니다.',
+    '//',
+    '// ⚠️  조건 해석 주의 (개근 / 공백25퍼 / 공백50퍼):',
+    '//   이 세 조건은 두 가지 상황을 동시에 포함합니다.',
+    '//     개근     → ① 매일 실제로 지출했거나  ② 매일 기록을 빠짐없이 작성했거나',
+    '//     공백25퍼 → ① 빠진 날만큼 지출을 안 했거나  ② 그날 기록을 빠뜨렸거나',
+    '//     공백50퍼 → ① 빠진 날만큼 지출을 안 했거나  ② 그날 기록을 빠뜨렸거나',
+    '//   코멘트를 작성할 때 두 경우 모두에 어색하지 않게 써주세요.',
+    '//',
+    '// 사용 가능한 변수:',
+    '//   {건수}     → 이번 달 기간 총 지출 건수  (예: 12 / "12일"로 쓰려면 {건수}일)',
+    '//   {카테고리} → 해당 조건의 카테고리명',
+    '//   {날짜}     → 가장 많이 지출한 날짜 (n월 n일 형식으로 자동 변환)',
+    '//   {남은날}   → 이번 달 기간 남은 일수  (예: 7 / "7일"로 쓰려면 {남은날}일)',
+    '//',
+    '// ⚠️  예산여유 / 예산부족 조건 안내:',
+    '//   남은 예산 비율(%)과 남은 날 비율(%)을 비교합니다.',
+    '//   예산여유 → 남은예산% > 남은날%  (예: 예산 40% 남았는데 날은 30% 남음 → 예산 소진 속도가 안정적)',
+    '//   예산부족 → 남은예산% < 남은날%  (예: 예산 20% 남았는데 날은 40% 남음 → 지출 속도가 예산을 앞지르는 중)',
+    '//   ※ 예산 초과, 기간 만료, 마지막 날인 경우 이 조건은 발동되지 않습니다.',
+    '//',
+    '// 예시: "이번 달 {건수}건 기록했어요!"',
+    '// ─────────────────────────────────────',
+    '',
+  ];
+
+  COMMENT_KEYS.forEach(k => {
+    const desc = condDesc[k] || '';
+    const varHint = vars[k] ? `  (${vars[k]})` : '';
+    lines.push(`// 【${k}】 ${desc}${varHint}`);
+    lines.push(`@@ ${k}`);
+    lines.push('');
+    lines.push('');
+  });
+
+  dlBlob(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}),
+    `가계부_코멘트_양식.txt`);
+}
+
+function renderCommentSettings() {
+  const toggle = document.getElementById('commentModeToggle');
+  if (toggle) toggle.checked = commentMode;
+  const mgr = document.getElementById('commentMgr');
+  if (mgr) mgr.style.display = commentMode ? 'flex' : 'none';
+  updateCommentCountLabel();
+}
+
+function buildCatSelect() {
+  const opts = categories.map(c => `<option value="${c.emoji}">${c.emoji}</option>`).join('');
+  document.getElementById('expCat').innerHTML  = opts;
+  document.getElementById('editCat').innerHTML = opts;
+}
+
+// ── EDIT EXPENSE ──
+function openEditModal(id) {
+  // find expense across all months
+  let found = null;
+  for (const k of Object.keys(data)) {
+    found = data[k].expenses.find(e => e.id === id);
+    if (found) break;
+  }
+  if (!found) return;
+
+  document.getElementById('editId').value     = found.id;
+  document.getElementById('editName').value   = found.name;
+  document.getElementById('editAmount').value = found.amount;
+  document.getElementById('editDate').value   = found.date;
+  document.getElementById('editCat').value    = found.cat;
+  document.getElementById('editExclude').checked = !!found.excluded;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function saveEditExpense() {
+  const id     = document.getElementById('editId').value;
+  const name   = document.getElementById('editName').value.trim();
+  const amount = parseInt(document.getElementById('editAmount').value);
+  const cat    = document.getElementById('editCat').value;
+  const date   = document.getElementById('editDate').value;
+
+  if (!name)              { alert('항목명을 입력해주세요.'); return; }
+  if (!amount || amount <= 0) { alert('금액을 입력해주세요.'); return; }
+  if (!date)              { alert('날짜를 선택해주세요.'); return; }
+
+  const excluded = document.getElementById('editExclude').checked;
+
+  // Remove from old period
+  for (const k of Object.keys(data)) {
+    const idx = data[k].expenses.findIndex(e => e.id === id);
+    if (idx !== -1) { data[k].expenses.splice(idx, 1); break; }
+  }
+
+  // Insert into correct period for new date
+  const pk = periodKeyForDate(date);
+  const [py, pm] = pk.split('-').map(Number);
+  const md = getMonthData(py, pm);
+  md.expenses.push({ id, name, amount, cat, date, excluded });
+
+  saveData();
+  closeModal('editModal');
+  render();
+  if (activeTab === 'calendar') renderCalendar();
+  if (activeTab === 'search')   doSearch();
+  if (commentMode) showComment(activeTab);
+}
+
+// ════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════
+function renderSettings() {
+  // Sync start day selects
+  document.getElementById('startDaySelect').value = startDay;
+  buildColorSwatches();
+  renderCommentSettings();
+
+  // Cat list
+  const listEl = document.getElementById('catList');
+  listEl.innerHTML = categories.map((c, i) => `
+    <div class="cat-item" id="cat-item-${i}" draggable="true" data-idx="${i}">
+      <div class="cat-item-main">
+        <span class="cat-drag-handle" title="드래그하여 순서 변경">⠿</span>
+        <button class="cat-emoji-btn" onclick="openEmojiPicker(${i}, this)" title="이모지 변경">${c.emoji}</button>
+        <input class="cat-name-input" value="${esc(c.name)}" oninput="updateCatName(${i}, this.value)" placeholder="카테고리명"/>
+        <label class="cat-check-label" style="margin-left:2px;">
+          <input type="checkbox" ${c.isFoodType ? 'checked' : ''} onchange="updateCatFood(${i}, this.checked)"/> 식비
+        </label>
+        <button class="cat-del-btn" onclick="deleteCategory(${i})" title="삭제">×</button>
+      </div>
+    </div>`).join('');
+  initCatDrag();
+
+  // Target list
+  renderTargetList();
+}
+
+function renderTargetList() {
+  const el = document.getElementById('targetList');
+  if (!el) return;
+  const targets = categories.filter(c => c.target > 0);
+  if (targets.length === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--ink-muted);padding:4px 0;">설정된 목표액이 없습니다</div>`;
+    return;
+  }
+  el.innerHTML = targets.map(c => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+      <span style="font-size:16px;width:24px;text-align:center;flex-shrink:0;">${c.emoji}</span>
+      <span style="flex:1;font-size:13px;">${esc(c.name)}</span>
+      <div class="iw" style="width:110px;">
+        <span class="pfx" style="font-size:11px;">₩</span>
+        <input type="number" style="padding-left:20px;font-size:12px;" value="${c.target}" min="0" step="1000"
+          oninput="updateCatTargetByEmoji('${c.emoji}', this.value)"/>
+      </div>
+      <button class="cat-del-btn" onclick="updateCatTargetByEmoji('${c.emoji}', 0)" title="삭제">×</button>
+    </div>`).join('');
+}
+
+function addTargetRow() {
+  // 아직 목표 없는 카테고리 중 첫 번째를 기본 선택
+  const available = categories.filter(c => !c.target || c.target === 0);
+  if (available.length === 0) { alert('모든 카테고리에 이미 목표액이 설정되어 있습니다.'); return; }
+
+  const el = document.getElementById('targetList');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px dashed var(--accent);border-radius:8px;padding:8px 10px;';
+  div.innerHTML = `
+    <select style="flex:1;font-size:13px;border:1.5px solid var(--border);border-radius:6px;padding:5px 6px;background:var(--surface);font-family:\'Nanum Gothic\',sans-serif;">
+      ${available.map(c => `<option value="${c.emoji}">${c.emoji} ${esc(c.name)}</option>`).join('')}
+    </select>
+    <div class="iw" style="width:110px;">
+      <span class="pfx" style="font-size:11px;">₩</span>
+      <input type="number" placeholder="목표액" min="0" step="1000" style="padding-left:20px;font-size:12px;"/>
+    </div>
+    <button class="btn btn-sm" style="white-space:nowrap;padding:4px 10px;" onclick="confirmAddTarget(this)">추가</button>`;
+  el.appendChild(div);
+  div.querySelector('input[type=number]').focus();
+}
+
+function confirmAddTarget(btn) {
+  const row = btn.closest('div');
+  const emoji = row.querySelector('select').value;
+  const val = parseInt(row.querySelector('input[type=number]').value) || 0;
+  if (!val) { alert('목표액을 입력해주세요.'); return; }
+  updateCatTargetByEmoji(emoji, val);
+}
+
+function updateCatTargetByEmoji(emoji, val) {
+  const cat = categories.find(c => c.emoji === emoji);
+  if (cat) { cat.target = parseInt(val) || 0; saveCats(); renderTargetList(); }
+}
+
+function initCatDrag() {
+  const listEl = document.getElementById('catList');
+  let dragIdx = null;
+
+  listEl.querySelectorAll('.cat-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragIdx = parseInt(item.dataset.idx);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => item.style.opacity = '0.4', 0);
+    });
+    item.addEventListener('dragend', () => {
+      item.style.opacity = '';
+      listEl.querySelectorAll('.cat-item').forEach(el => el.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      listEl.querySelectorAll('.cat-item').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      const dropIdx = parseInt(item.dataset.idx);
+      if (dragIdx === null || dragIdx === dropIdx) return;
+      const moved = categories.splice(dragIdx, 1)[0];
+      categories.splice(dropIdx, 0, moved);
+      saveCats(); buildCatSelect(); renderSettings();
+      if (activeTab === 'search') buildCatChips();
+    });
+  });
+}
+
+function addCategory() {
+  categories.push({ emoji: '🎁', name: '새 카테고리' });
+  saveCats(); buildCatSelect(); renderSettings();
+  if (activeTab === 'search') buildCatChips();
+  document.getElementById('catList').lastElementChild?.scrollIntoView({ behavior:'smooth' });
+}
+
+function updateCatFood(i, checked) {
+  categories[i].isFoodType = checked;
+  saveCats();
+}
+
+
+function deleteCategory(i) {
+  if (categories.length <= 1) { alert('카테고리는 최소 1개 필요합니다.'); return; }
+  if (categories[i].emoji === selectedCat) selectedCat = null;
+  categories.splice(i, 1);
+  saveCats(); buildCatSelect(); renderSettings();
+  if (activeTab === 'search') { buildCatChips(); doSearch(); }
+}
+
+function updateCatName(i, val) {
+  categories[i].name = val;
+  saveCats(); buildCatSelect();
+}
+
+// ── EMOJI PICKER ──
+function openEmojiPicker(catIdx, btnEl) {
+  const picker = document.getElementById('emojiPicker');
+  if (activeEmojiTarget === catIdx && picker.style.display !== 'none') {
+    picker.style.display = 'none';
+    activeEmojiTarget = null;
+    return;
+  }
+  activeEmojiTarget = catIdx;
+  picker.innerHTML = ALL_EMOJIS.map(em =>
+    `<button class="emoji-opt" onclick="selectEmoji(${catIdx},'${em}')">${em}</button>`
+  ).join('');
+
+  const rect = btnEl.getBoundingClientRect();
+  picker.style.display = 'flex';
+
+  // position: try below button, but check viewport
+  let top  = rect.bottom + 4;
+  let left = rect.left;
+  const pw = 220;
+  if (left + pw > window.innerWidth) left = window.innerWidth - pw - 8;
+  if (top + 200 > window.innerHeight) top = rect.top - 210;
+  picker.style.top  = top + 'px';
+  picker.style.left = left + 'px';
+}
+
+function selectEmoji(catIdx, emoji) {
+  categories[catIdx].emoji = emoji;
+  saveCats(); buildCatSelect(); renderSettings();
+  document.getElementById('emojiPicker').style.display = 'none';
+  activeEmojiTarget = null;
+}
+
+document.addEventListener('click', e => {
+  const picker = document.getElementById('emojiPicker');
+  if (!picker.contains(e.target) && !e.target.classList.contains('cat-emoji-btn')) {
+    picker.style.display = 'none';
+    activeEmojiTarget = null;
+  }
+});
+
+// ════════════════════════════════════════════
+// BUDGET ACTIONS
+// ════════════════════════════════════════════
+function setBudget() {
+  const val = parseInt(document.getElementById('budgetInput').value);
+  if (!val || val <= 0) { alert('올바른 예산을 입력해주세요.'); return; }
+  const md = getMonthData(currentYear, currentMonth);
+  md.budget = val;
+  saveData(); render();
+}
+
+function editBudget() {
+  const md = getMonthData(currentYear, currentMonth);
+  const saved = md.budget;
+  // toggle to edit mode
+  document.getElementById('budgetInputRow').style.display = '';
+  document.getElementById('budgetSetInfo').style.display  = 'none';
+  document.getElementById('budgetInput').value = saved;
+}
+
+// ── ACCENT COLOR ──
+const PRESET_COLORS = [
+  '#c8572a','#e74c3c','#e67e22','#2ecc71',
+  '#3498db','#9b59b6','#1c1c1e','#607d8b',
+];
+
+function applyAccent(hex, save) {
+  accentColor = hex;
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const tint = `rgb(${Math.round(r*.18+255*.82)},${Math.round(g*.18+255*.82)},${Math.round(b*.18+255*.82)})`;
+  document.documentElement.style.setProperty('--accent', hex);
+  document.documentElement.style.setProperty('--accent-light', tint);
+  if (save) { saveCfg(); buildColorSwatches(); }
+}
+
+function applyHexInput() {
+  let val = document.getElementById('accentHexInput').value.trim();
+  if (!val.startsWith('#')) val = '#' + val;
+  if (!/^#[0-9a-fA-F]{6}$/.test(val)) { alert('올바른 hex 코드를 입력하세요 (예: #3498db)'); return; }
+  applyAccent(val, true);
+}
+
+function buildColorSwatches() {
+  const wrap = document.getElementById('colorSwatches');
+  if (!wrap) return;
+  wrap.innerHTML = PRESET_COLORS.map(c =>
+    `<div class="color-swatch${c.toLowerCase() === accentColor.toLowerCase() ? ' active' : ''}"
+      style="background:${c};"
+      onclick="applyAccent('${c}', true)"></div>`
+  ).join('');
+  const picker = document.getElementById('accentColorPicker');
+  if (picker) picker.value = accentColor;
+  const hexInput = document.getElementById('accentHexInput');
+  if (hexInput) hexInput.value = accentColor;
+}
+function buildStartDaySelects() {
+  const opts = Array.from({length:28},(_,i)=>i+1)
+    .map(d=>`<option value="${d}">${d}</option>`).join('');
+  document.getElementById('startDaySelect').innerHTML  = opts;
+  document.getElementById('onboardStartDay').innerHTML = opts;
+  document.getElementById('startDaySelect').value  = startDay;
+  document.getElementById('onboardStartDay').value = startDay;
+}
+
+function saveStartDay() {
+  startDay = parseInt(document.getElementById('startDaySelect').value);
+  saveCfg();
+  // recalculate current period
+  const period = getCurrentPeriod();
+  currentYear  = period.y;
+  currentMonth = period.m;
+  render();
+}
+
+// ── ONBOARDING ──
+function completeOnboarding() {
+  const budVal   = parseInt(document.getElementById('onboardBudget').value);
+  const dayVal   = parseInt(document.getElementById('onboardStartDay').value);
+
+  startDay = dayVal || 1;
+  saveCfg();
+
+  // recalculate period with new startDay
+  const period = getCurrentPeriod();
+  currentYear  = period.y;
+  currentMonth = period.m;
+
+  if (budVal && budVal > 0) {
+    const md  = getMonthData(currentYear, currentMonth);
+    md.budget = budVal;
+    saveData();
+  }
+
+  document.getElementById('onboardingModal').classList.remove('open');
+  buildStartDaySelects();
+  render();
+  renderSettings();
+}
+
+function skipOnboarding() {
+  // Mark as visited without setting budget
+  saveCfg();
+  document.getElementById('onboardingModal').classList.remove('open');
+  buildStartDaySelects();
+  render();
+}
+
+function addExpense() {
+  const name   = document.getElementById('expName').value.trim();
+  const amount = parseInt(document.getElementById('expAmount').value);
+  const cat    = document.getElementById('expCat').value;
+  const date   = document.getElementById('expDate').value;
+  if (!name)              { alert('항목명을 입력해주세요.'); return; }
+  if (!amount || amount <= 0) { alert('금액을 입력해주세요.'); return; }
+  if (!date)              { alert('날짜를 선택해주세요.'); return; }
+
+  // Route to the period this date belongs to
+  const pk = periodKeyForDate(date);
+  const [py, pm] = pk.split('-').map(Number);
+  const excluded = document.getElementById('expExclude').checked;
+  const md = getMonthData(py, pm);
+  md.expenses.push({ id: Date.now().toString(), name, amount, cat, date, excluded });
+  saveData();
+  document.getElementById('expName').value   = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expExclude').checked = false;
+  render();
+  if (activeTab === 'calendar') renderCalendar();
+  if (commentMode) showComment(activeTab);
+}
+
+function deleteExpense(id) {
+  if (!confirm('이 지출을 삭제할까요?')) return;
+  // find which month
+  for (const k of Object.keys(data)) {
+    const idx = data[k].expenses.findIndex(e => e.id === id);
+    if (idx !== -1) { data[k].expenses.splice(idx, 1); break; }
+  }
+  saveData(); render();
+  if (activeTab === 'calendar') renderCalendar();
+  if (activeTab === 'search')   doSearch();
+  if (commentMode) showComment(activeTab);
+}
+
+function clearMonthData() {
+  const label = `${currentYear}년 ${currentMonth}월`;
+  if (!confirm(`${label} 데이터를 초기화할까요?\n예산과 지출 내역이 모두 삭제됩니다.`)) return;
+  const k = monthKey(currentYear, currentMonth);
+  delete data[k];
+  saveData(); render();
+  if (activeTab === 'calendar') renderCalendar();
+}
+
+function clearAllData() {
+  if (!confirm('정말로 모든 데이터를 삭제할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
+  data = {};
+  saveData(); render();
+}
+
+// ════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════
+function openExport() { document.getElementById('exportModal').classList.add('open'); }
+function openImport() { document.getElementById('importModal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════
+function getExportScope() {
+  const v = document.querySelector('input[name="exportScope"]:checked').value;
+
+  // 전체 data에서 기간키(periodKeyForDate) 기준으로 재분류
+  const byPeriod = {};
+  Object.keys(data).forEach(mk => {
+    const md = data[mk];
+    // 예산은 해당 월의 기간 키에 연결
+    const periodKey = mk; // budget은 monthKey = periodKey로 저장돼 있음
+    if (!byPeriod[periodKey]) byPeriod[periodKey] = { budget: 0, expenses: [] };
+    if (md.budget > 0) byPeriod[periodKey].budget = md.budget;
+    (md.expenses || []).forEach(e => {
+      const pk = periodKeyForDate(e.date);
+      if (!byPeriod[pk]) byPeriod[pk] = { budget: 0, expenses: [] };
+      byPeriod[pk].expenses.push(e);
+    });
+  });
+
+  if (v === 'month') {
+    // 현재 기간의 periodKey
+    const cur = getCurrentPeriod();
+    const pk = monthKey(cur.y, cur.m);
+    return byPeriod[pk] ? { [pk]: byPeriod[pk] } : {};
+  }
+  // 전체: 데이터 있는 기간만
+  const filtered = {};
+  Object.keys(byPeriod).sort().forEach(k => {
+    const d2 = byPeriod[k];
+    if (d2.expenses.length > 0 || d2.budget > 0) filtered[k] = d2;
+  });
+  return filtered;
+}
+
+function todayStamp() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  return `${yy}${mm}${dd}`;
+}
+
+function doExport(type) {
+  const scope = getExportScope();
+  const isAll = document.querySelector('input[name="exportScope"]:checked').value === 'all';
+  const stamp = todayStamp();
+
+  let label;
+  if (isAll) {
+    const keys = Object.keys(scope).sort();
+    if (keys.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+    const [fy, fm] = keys[0].split('-').map(Number);
+    const [ly, lm] = keys[keys.length-1].split('-').map(Number);
+    const { startStr } = getPeriodRange(fy, fm);
+    const { endStr   } = getPeriodRange(ly, lm);
+    label = `전체_${startStr}-${endStr}`;
+  } else {
+    const { startStr, endStr } = getPeriodRange(currentYear, currentMonth);
+    label = `${startStr}-${endStr}`;
+  }
+
+  if (!Object.keys(scope).length) { alert('내보낼 데이터가 없습니다.'); return; }
+  closeModal('exportModal');
+  if (type === 'json')      exportJSON(scope, label, stamp);
+  else if (type === 'xlsx') exportXLSX(scope, label, stamp);
+}
+
+function exportJSON(scope, label, stamp) {
+  const payload = { data: scope, categories, startDay };
+  dlBlob(new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' }), `가계부_${label}_${stamp}.json`);
+}
+
+function exportXLSX(scope, label, stamp) {
+  const wb = XLSX.utils.book_new();
+  const catName = e => categories.find(c => c.emoji === e.cat)?.name || e.cat;
+
+  Object.keys(scope).sort().forEach(mk => {
+    const [yr, mo] = mk.split('-').map(Number);
+    const { startStr, endStr } = getPeriodRange(yr, mo);
+    const periodLabel = `${startStr} ~ ${endStr}`;
+
+    const inSeason = (scope[mk].expenses || [])
+      .filter(e => e.date >= startStr && e.date <= endStr)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const budget = scope[mk].budget || 0;
+    const totalSpent = inSeason.filter(e => e.excluded !== true).reduce((s, e) => s + e.amount, 0);
+
+    const rows = [
+      [`기간: ${periodLabel}`],
+      [],
+      ['날짜', '항목', '카테고리', '금액(원)', '미반영'],
+      ...inSeason.map(e => [e.date, e.name, catName(e), e.amount, e.excluded ? '미반영' : '']),
+      [],
+      ['', '', '예산', budget, ''],
+      ['', '', '총 지출(반영)', totalSpent, ''],
+      ['', '', '잔액', (budget || 0) - totalSpent, ''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:13},{wch:22},{wch:10},{wch:13},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, mk);
+  });
+
+  if (!wb.SheetNames.length) { alert('내보낼 데이터가 없습니다.'); return; }
+  XLSX.writeFile(wb, `가계부_${label}_${stamp}.xlsx`);
+}
+
+function exportSettings() {
+  const stamp = todayStamp();
+  const cfg = {
+    _type: 'kakeibo_settings',
+    startDay,
+    accentColor: document.documentElement.style.getPropertyValue('--accent') || '#c8572a',
+    categories,
+  };
+  dlBlob(
+    new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' }),
+    `가계부_설정_${stamp}.json`
+  );
+  alert('⚙️ 설정이 내보내졌습니다.\n새 기기에서 데이터 가져오기로 불러올 수 있습니다.');
+}
+
+// ════════════════════════════════════════════
+// IMPORT
+// ════════════════════════════════════════════
+function doImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+
+      // 설정 전용 파일 처리
+      if (parsed._type === 'kakeibo_settings') {
+        if (parsed.startDay) { startDay = parsed.startDay; }
+        if (parsed.accentColor) { applyAccent(parsed.accentColor, false); }
+        if (parsed.categories && Array.isArray(parsed.categories)) {
+          categories = parsed.categories;
+          saveCats(); buildCatSelect();
+        }
+        saveCfg(); buildStartDaySelects(); render();
+        closeModal('importModal');
+        alert('⚙️ 설정을 불러왔습니다.');
+        event.target.value = '';
+        return;
+      }
+
+      // 지출 데이터 파일
+      const importedData = parsed.data || parsed;
+      const importedCats = parsed.categories;
+
+      let addedExp = 0;
+      Object.keys(importedData).forEach(k => {
+        if (!data[k]) data[k] = { budget:0, expenses:[] };
+        if (importedData[k].budget) data[k].budget = importedData[k].budget;
+        const existIds = new Set(data[k].expenses.map(x=>x.id));
+        (importedData[k].expenses||[]).forEach(ex => {
+          if (!existIds.has(ex.id)) { data[k].expenses.push(ex); addedExp++; }
+        });
+      });
+
+      if (importedCats && Array.isArray(importedCats)) {
+        categories = importedCats;
+        saveCats(); buildCatSelect();
+      }
+      if (parsed.startDay) {
+        startDay = parsed.startDay;
+        saveCfg(); buildStartDaySelects();
+      }
+
+      saveData(); render();
+      closeModal('importModal');
+      alert(`✅ 가져오기 완료!\n${Object.keys(importedData).length}개월 / ${addedExp}건 추가됨`);
+    } catch(err) {
+      alert('파일을 읽을 수 없습니다.\n올바른 JSON 파일인지 확인해주세요.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+
+function doImportXLSX(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      let addedExp = 0, skipped = 0;
+
+      wb.SheetNames.forEach(sheetName => {
+        // 시트 이름이 YYYY-MM 형식인지 확인
+        if (!/^\d{4}-\d{2}$/.test(sheetName)) return;
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        // 헤더 행 찾기 (날짜/항목/카테고리/금액 컬럼)
+        let headerIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i][0] === '날짜' && rows[i][1] === '항목') { headerIdx = i; break; }
+        }
+        if (headerIdx < 0) return;
+
+        // 예산 행 찾기
+        let budget = 0;
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          if (rows[i][2] === '예산' && rows[i][3]) { budget = Number(rows[i][3]) || 0; break; }
+        }
+
+        // 지출 행 파싱
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          const [dateVal, name, catStr, amtVal, excl] = rows[i];
+          if (!dateVal || !name || !amtVal) continue;
+          // 날짜: YYYY-MM-DD 문자열 또는 엑셀 숫자 날짜
+          let dateStr = String(dateVal).trim();
+          if (/^\d{5}$/.test(dateStr)) {
+            // 엑셀 시리얼 숫자 → 날짜
+            const d = new Date(Math.round((Number(dateStr) - 25569) * 86400 * 1000));
+            dateStr = d.toISOString().split('T')[0];
+          }
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+
+          const amount = Number(String(amtVal).replace(/[^0-9.-]/g,''));
+          if (!amount || amount <= 0) continue;
+
+          // 카테고리 이모지 매칭 (이름으로 역방향 탐색)
+          const cat = categories.find(c => c.name === String(catStr).trim() || c.emoji === String(catStr).trim());
+          const catEmoji = cat ? cat.emoji : (categories[0]?.emoji || '🎁');
+
+          const mk = periodKeyForDate(dateStr);
+          if (!data[mk]) data[mk] = { budget: 0, expenses: [] };
+          if (budget > 0 && !data[mk].budget) data[mk].budget = budget;
+
+          // 중복 체크: 같은 날짜+이름+금액이면 스킵
+          const isDup = data[mk].expenses.some(ex =>
+            ex.date === dateStr && ex.name === String(name).trim() && ex.amount === amount
+          );
+          if (isDup) { skipped++; continue; }
+
+          data[mk].expenses.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+            date: dateStr,
+            name: String(name).trim(),
+            cat: catEmoji,
+            amount,
+            excluded: excl === '미반영',
+          });
+          addedExp++;
+        }
+      });
+
+      saveData(); render();
+      closeModal('importModal');
+      alert(`✅ 엑셀 가져오기 완료!\n${addedExp}건 추가${skipped > 0 ? ` / ${skipped}건 중복 스킵` : ''}`);
+    } catch(err) {
+      alert('파일을 읽을 수 없습니다.\n이 앱에서 내보낸 .xlsx 파일인지 확인해주세요.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function fmt(n)    { return Math.abs(n).toLocaleString('ko-KR'); }
+function fmtNum(n) { return n.toLocaleString('ko-KR'); }
+function esc(s)    { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d) {
+  const days = ['일','월','화','수','목','금','토'];
+  const [,m,day] = d.split('-');
+  return `${+m}월 ${+day}일 (${days[new Date(d + 'T12:00').getDay()]})`;
+}
+function show(id) { document.getElementById(id).style.display = ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+function dlBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+// Enter shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.activeElement.id === 'budgetInput') setBudget();
+  if (['expName','expAmount'].includes(document.activeElement.id)) addExpense();
+});
+
+init();
+</script>
+</body>
+</html>
